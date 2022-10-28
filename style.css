@@ -1,10 +1,10 @@
-canvas {
+/* canvas {
   height: 600px;
   width: 600px;
   background-color: #eee;
   margin: 0;
   padding: 0;
-}
+} */
 
 .abs {
   position: absolute;
@@ -21,4 +21,7 @@ body {
   height: 100%;
   margin: 0;
   padding: 0;
+}
+#map img {
+  background-color: transparent;
 }

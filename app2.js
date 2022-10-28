@@ -2,17 +2,17 @@ console.log("app2");
 console.log("Im alive");
 
 // Create the script tag, set the appropriate attributes
-var script = document.createElement("script");
-script.src = "https://maps.googleapis.com/maps/api/js?key=AIzaSyBMobqGzdmYFvsxeZJ3YunRull6NYefekM&callback=initMap";
-script.async = true;
+// var script = document.createElement("script");
+// script.src = "https://maps.googleapis.com/maps/api/js?key=AIzaSyBMobqGzdmYFvsxeZJ3YunRull6NYefekM&callback=initMap";
+// script.async = true;
 
-// Attach your callback function to the `window` object
-// window.initMap = function () {
-//   // JS API is loaded and available
-// };
+// // Attach your callback function to the `window` object
+// // window.initMap = function () {
+// //   // JS API is loaded and available
+// // };
 
-// Append the 'script' element to 'head'
-document.head.appendChild(script);
+// // Append the 'script' element to 'head'
+// document.head.appendChild(script);
 
 let bigBorder = [];
 
@@ -20,7 +20,7 @@ fetch("border.json")
   .then((response) => response.json())
   .then((json) => (bigBorder = json));
 
-const anotherArr = [
+let anotherArr = [
   [-96.900654, 33.124557],
   [-96.900686, 33.124562],
   [-96.900628, 33.124173],
@@ -393,12 +393,20 @@ const anotherArr = [
 // canvas.width = canvas.clientWidth;
 // canvas.height = canvas.clientHeight;
 // var context = canvas.getContext("2d");
+const apiKey = "AIzaSyAnvwTCDQRQtmYsAie-EYGDoiWCRUh6Yxs";
 
 const submitButton = document.getElementById("checkLoc");
+const submitAddress = document.getElementById("checkAddress");
 const domGoogle = document.getElementById("dom-google");
 const domX = document.getElementById("dom-x");
 const domY = document.getElementById("dom-y");
 const domResult = document.getElementById("dom-result");
+const domAddress = document.getElementById("dom-address");
+
+submitAddress.addEventListener("mouseup", (e) => {
+  console.log("click address");
+  getGeocoding();
+});
 
 submitButton.addEventListener("mouseup", (e) => {
   console.log("click");
@@ -411,12 +419,44 @@ submitButton.addEventListener("mouseup", (e) => {
     console.log(chunks);
     // domX.value = chunks[0];
     // domY.value = chunks[1];
-    domResult.innerHTML = checkInside(bigBorder, 366, [chunks[1], chunks[0]]);
+    let verdict = checkInside(bigBorder, 366, [chunks[1], chunks[0]]);
+    console.log(verdict);
+    if (verdict) {
+      domResult.innerText = "This is within Frisco ISD";
+    } else {
+      domResult.innerText = "This is outside Frisco ISD";
+    }
   };
 
   splitCoords(domGoogle.value);
   // ;
 });
+
+let data2 = "";
+
+async function getGeocoding() {
+  let query = encodeURI(domAddress.value);
+  let data = null;
+  console.log("calling");
+  const result = await fetch(
+    `https://maps.googleapis.com/maps/api/geocode/json?address=${query}&key=AIzaSyBMobqGzdmYFvsxeZJ3YunRull6NYefekM`
+  ).then((response) => (res = response.json()));
+  console.log(result.results[0]);
+  domAddress.value = result.results[0].formatted_address;
+  let latlng = `${result.results[0].geometry.location.lat}, ${result.results[0].geometry.location.lng}`;
+  console.log(latlng);
+  domGoogle.value = latlng;
+  let verdict = checkInside(bigBorder, 366, [
+    result.results[0].geometry.location.lng,
+    result.results[0].geometry.location.lat,
+  ]);
+  if (verdict) {
+    domResult.innerText = "This is within Frisco ISD";
+  } else {
+    domResult.innerText = "This is outside Frisco ISD";
+  }
+  initMap(result.results[0].geometry.location);
+}
 
 function draw() {
   const canvas = document.getElementById("html-canvas");
@@ -499,68 +539,61 @@ function nestedArrayToObjects(x) {
   return newObj;
 }
 nestedArrayToObjects(anotherArr);
-// Initialize and add the map
 
-window.initMap = function () {
+// const center = { lat: 50.064192, lng: -130.605469 };
+// // Create a bounding box with sides ~10km away from the center point
+// const defaultBounds = {
+//   north: center.lat + 0.1,
+//   south: center.lat - 0.1,
+//   east: center.lng + 0.1,
+//   west: center.lng - 0.1,
+// };
+// const input = document.getElementById("dom-address");
+// const options = {
+//   bounds: defaultBounds,
+//   componentRestrictions: { country: "us" },
+//   fields: ["address_components", "geometry", "icon", "name"],
+//   strictBounds: false,
+//   types: ["establishment"],
+// };
+// const autocomplete = new google.maps.places.Autocomplete(input, options);
+
+function initMap(pos) {
+  // The location of FISD Admin
+  // const adminBldg = { lat: 33.12443425433204, lng: -96.79647875401061 };
+  // The map, centered at FISD Admin
   const map = new google.maps.Map(document.getElementById("map"), {
-    zoom: 3,
-    center: { lat: 0, lng: -180 },
-  });
-  google.maps.event.trigger(map, "resize");
-
-  const flightPlanCoordinates = [
-    { lat: 37.772, lng: -122.214 },
-    { lat: 21.291, lng: -157.821 },
-    { lat: -18.142, lng: 178.431 },
-    { lat: -27.467, lng: 153.027 },
-  ];
-  // const flightPath = new google.maps.Polygon({
-  //   path: flightPlanCoordinates,
-  //   strokeColor: "#FF0000",
-  //   strokeOpacity: 0.5,
-  //   strokeWeight: 1,
-  // });
-  map.data.add({
-    geometry: new google.maps.Data.Polygon([flightPlanCoordinates]),
+    zoom: 12,
+    center: pos,
+    mapTypeId: "terrain",
   });
 
-  // flightPath.setMap(map);
-};
-// function initMap() {
+  // The marker, positioned at FISD Admin
+  const marker = new google.maps.Marker({
+    position: pos,
+    map: map,
+  });
+  // const fakePath = [
+  //   { lng: -96.900654, lat: 33.12455 },
+  //   { lng: -96.900709, lat: 33.124753 },
+  //   { lng: -96.900596, lat: 33.131117 },
+  // ];
+  const districtBorder = new google.maps.Polyline({
+    path: completed,
+    geodesic: true,
+    strokeColor: "#FF0000",
+    strokeOpacity: 1.0,
+    strokeWeight: 2,
+  });
 
-// }
-
-// function initMap() {
-//   // The location of FISD Admin
-//   const adminBldg = { lat: 33.12443425433204, lng: -96.79647875401061 };
-//   // The map, centered at FISD Admin
-//   const map = new google.maps.Map(document.getElementById("map"), {
-//     zoom: 12,
-//     center: adminBldg,
-//     mapTypeId: "terrain",
-//   });
-//   // The marker, positioned at FISD Admin
-//   const marker = new google.maps.Marker({
-//     position: adminBldg,
-//     map: map,
-//   });
-//   const fakePath = [
-//     { lng: -96.900654, lat: 33.12455 },
-//     { lng: -96.900709, lat: 33.124753 },
-//     { lng: -96.900596, lat: 33.131117 },
-//   ];
-//   const districtBorder = new google.maps.Polyline({
-//     path: fakePath,
-//     geodesic: true,
-//     strokeColor: "#FF0000",
-//     strokeOpacity: 1.0,
-//     strokeWeight: 2,
-//   });
-
-//   districtBorder.setMap(map);
-// }
-
-window.initMap = initMap;
+  districtBorder.setMap(map);
+  // setTimeout(() => {
+  //   console.log("????");
+  //   google.maps.event.trigger(map, "resize");
+  // }, 3000);
+}
+// initMap({ lat: 33.12443425433204, lng: -96.79647875401061 });
+// window.initMap = initMap;
 // ========================actual Logic=-====================
 
 const onLine = (l1, p) => {

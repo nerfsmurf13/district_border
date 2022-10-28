@@ -6,29 +6,45 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Document</title>
     <script src="app2.js" defer></script>
-		<script defer src="https://polyfill.io/v3/polyfill.min.js?features=default"></script>
-		<!-- <script defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAnvwTCDQRQtmYsAie-EYGDoiWCRUh6Yxs&callback=initMap"></script> -->
-
+    <script
+      defer
+      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAnvwTCDQRQtmYsAie-EYGDoiWCRUh6Yxs&callback=initMap&libraries=places"
+    ></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
-    <h2>inside or out</h2>
-    <div class="flex flex-col px-2">
-			<div>paste from google maps: <input type="" class="w-[350px] border border-black rounded" id="dom-google"></div>
-			<!-- for reference... ignore | y= 33.12291990532928, x= -97.63570989179748 -->
-			<!-- <div>X: <input type="" class="w-20 border border-black rounded" id="dom-x"></div>
-			<div>Y: <input type="" class="w-20 border border-black rounded" id="dom-y"></div> -->
-			<button class="w-auto border bg-green-500 text-white p-2" id="checkLoc">Check</button>
-			<div>Result: <div id="dom-result">Results here</div></div>
-      <!-- <canvas id="html-canvas"> -->
-				<h3>My Google Maps Demo</h3>
-				<!--The div element for the map -->
-				<div id="map"></div>
-		
-      </div>
-    </div>
+    <div class="w-full flex flex-col h-full">
+      <div class="w-[1024px] mx-auto">
+        <h1 class="text-2xl">Inside or Out</h1>
+        <!-- <div>33.19635117901721, -96.83027085403674</div> -->
+        <div class="flex flex-col px-2">
+          <div class="flex mb-2">
+            <div class="w-[75px]">Address</div>
+            <input type="" class="px-2 w-[350px] border border-black rounded mr-2" id="dom-address" />
+            <button class="w-[200px] border bg-green-500 text-white p-2 rounded" id="checkAddress">
+              Check Address
+            </button>
+          </div>
+          <div class="flex">
+            <div class="w-[75px]">Coords</div>
+            <input type="" class="px-2 w-[350px] border border-black rounded mr-2" id="dom-google" />
+            <button class="w-[200px] border bg-green-500 text-white p-2 rounded" id="checkLoc">Check Coords</button>
+          </div>
+          <!-- for reference... ignore | y= 33.12291990532928, x= -97.63570989179748 -->
+          <!-- <div>X: <input type="" class="w-20 border border-black rounded" id="dom-x"></div>
+					<div>Y: <input type="" class="w-20 border border-black rounded" id="dom-y"></div> -->
 
+          <div class="flex my-4 text-xl">
+            <div class="mr-2">Result:</div>
+            <div id="dom-result">Results here</div>
+          </div>
+          <!-- <canvas id="html-canvas"> -->
+        </div>
+      </div>
+      <!--The div element for the map -->
+      <div id="map" class="flex grow"></div>
+    </div>
   </body>
 </html>
 <!-- 33.203721272091464, -96.73688925687483 -->
