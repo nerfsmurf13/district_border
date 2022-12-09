@@ -15,22 +15,32 @@
   </head>
   <body>
     <div class="w-full flex flex-col h-full">
-      <div class="w-[1024px] mx-auto">
-        <h1 class="text-2xl">Inside or Out</h1>
+      <div class="w-[1024px] mx-auto px-4">
+        <h1 class="text-[50px]">Inside or Out</h1>
         <!-- <div>33.19635117901721, -96.83027085403674</div> -->
-        <div class="flex flex-col px-2">
-          <div class="flex mb-2">
+        <div class="flex flex-col">
+          <form class="flex mb-2" onsubmit="getGeocoding();return false;">
             <div class="w-[75px]">Address</div>
-            <input type="" class="px-2 w-[350px] border border-black rounded mr-2" id="dom-address" />
-            <button class="w-[200px] border bg-green-500 text-white p-2 rounded" id="checkAddress">
+            <div class="relative">
+              <input
+                autocomplete="off"
+                type=""
+                class="h-full px-2 w-[350px] border border-black rounded mr-2"
+                id="dom-address"
+              />
+              <ul id="autocomplete-area" class="absolute top-[0-20px] bg-white px-2 shadow z-10"></ul>
+            </div>
+            <button type="submit" class="w-[200px] border bg-green-500 text-white p-2 rounded" id="checkAddress">
               Check Address
             </button>
-          </div>
-          <div class="flex">
+          </form>
+          <form class="flex" onsubmit="splitCoords(domGoogle.value);return false;">
             <div class="w-[75px]">Coords</div>
             <input type="" class="px-2 w-[350px] border border-black rounded mr-2" id="dom-google" />
-            <button class="w-[200px] border bg-green-500 text-white p-2 rounded" id="checkLoc">Check Coords</button>
-          </div>
+            <button type="submit" class="w-[200px] border bg-green-500 text-white p-2 rounded" id="checkLoc">
+              Check Coords
+            </button>
+          </form>
           <!-- for reference... ignore | y= 33.12291990532928, x= -97.63570989179748 -->
           <!-- <div>X: <input type="" class="w-20 border border-black rounded" id="dom-x"></div>
 					<div>Y: <input type="" class="w-20 border border-black rounded" id="dom-y"></div> -->
