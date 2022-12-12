@@ -5,6 +5,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Document</title>
+    <script src="borders.js"></script>
     <script src="app2.js" defer></script>
     <script
       defer
@@ -45,11 +46,27 @@
           <!-- <div>X: <input type="" class="w-20 border border-black rounded" id="dom-x"></div>
 					<div>Y: <input type="" class="w-20 border border-black rounded" id="dom-y"></div> -->
 
-          <div class="flex my-4 text-xl">
+          <div class="hidden flex my-4 text-xl">
             <div class="mr-2">Result:</div>
             <div id="dom-result">Results here</div>
           </div>
           <!-- <canvas id="html-canvas"> -->
+        </div>
+      </div>
+      <div class="flex flex-col m-4">
+        <div>Valid Locations</div>
+        <div class="flex">
+          <ul>
+            <li class="rounded pl-2 bg-red-200 flex outline outline-1 outline-black/25">
+              <span class="bg-white p-1">School 1</span>
+            </li>
+            <li class="rounded pl-2 bg-green-200 flex outline outline-1 outline-black/25">
+              <span class="bg-white p-1">School 2</span>
+            </li>
+            <li class="rounded pl-2 bg-purple-200 flex outline outline-1 outline-black/25">
+              <span class="bg-white p-1">School 3</span>
+            </li>
+          </ul>
         </div>
       </div>
       <!--The div element for the map -->
