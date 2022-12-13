@@ -11,6 +11,18 @@ const originInput = document.getElementById("dom-address");
 const autocompleteArea = document.getElementById("autocomplete-area");
 // let input
 
+// num to alpha
+function numToAlpha(x) {
+  let alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  let div = 26;
+  if (x < div) {
+    return alphabet[x];
+  } else {
+    console.log(Math.floor(x / div), (digit = x % div));
+    return `${alphabet[Math.floor(x / div) - 1]}${alphabet[(digit = x % div)]}`.trim();
+  }
+}
+
 // let data2 = "";
 let searching = true;
 let listOfValidZones = [];
@@ -74,9 +86,23 @@ function drawResults() {
   for (const [i, result] of listOfValidZones.entries()) {
     // rawHtml += `<div>${result.name} | ${result.address}</div>`;
     // if (result.location)
-    rawHtml += `<li class="rounded pl-2 bg-[${result.color}] flex outline outline-1 outline-black/25">
-    <span class="bg-white p-1 flex grow"><strong class="mx-1">${i}.</strong> ${result.name} | Grades: ${result.grades} | ${result.address}</span>
-  </li>`;
+    //   rawHtml += `<li class="rounded pl-2 bg-[${result.color}] flex outline outline-1 outline-black/25">
+    //   <span class="bg-white p-1 flex grow"><strong class="mx-1">${i}.</strong> ${result.name} | Grades: ${result.grades} | ${result.address}</span>
+    // </li>`;
+    rawHtml += `
+	<li>
+                          <div
+                            style="display: flex; border-radius: 4px; overflow: hidden; border: ${
+                              result.color
+                            } 1px solid"
+                          >
+                            <div style="background-color: ${result.color}; width: 10px"></div>
+                            <div><span style="margin-left: 1rem">${numToAlpha(i)}.</span> ${result.color} ${
+      result.name
+    } | Grades: ${result.grades} | ${result.address}</div>
+                          </div>
+                        </li>
+	`;
     console.log(result);
     // console.log(test);
   }
@@ -100,7 +126,7 @@ function initMap(pos = { lat: 33.12443425433204, lng: -96.79647875401061 }) {
     types: ["establishment"],
   };
   const geocoder = new google.maps.Geocoder();
-  const autocomplete = new google.maps.places.Autocomplete(domAddressInput, options);
+  const autocomplete = new google.maps.places.SearchBox(domAddressInput, options);
 
   // The location of FISD Admin
   // The map, centered at FISD Admin
@@ -124,13 +150,13 @@ function initMap(pos = { lat: 33.12443425433204, lng: -96.79647875401061 }) {
     // const element = array[i];
 
     let locInfo = null;
-    async function getGeocoding2(x) {
+    function getGeocoding2(x) {
       let query = encodeURI(x);
       console.log("calling");
-      const smallResult = await fetch(
-        `https://maps.googleapis.com/maps/api/geocode/json?address=${query}&key=AIzaSyBMobqGzdmYFvsxeZJ3YunRull6NYefekM`
-      ).then((response) => (res = response.json()));
-      locInfo = smallResult;
+      // const smallResult = await fetch(
+      //   `https://maps.googleapis.com/maps/api/geocode/json?address=${query}&key=AIzaSyBMobqGzdmYFvsxeZJ3YunRull6NYefekM`
+      // ).then((response) => (res = response.json()));
+      // locInfo = smallResult;
       // locInfo = `${result.results[0].geometry.location.lat}, ${result.results[0].geometry.location.lng}`;
       console.log(locInfo);
       // console.log(locInfo.results[0].geometry.location);
@@ -151,20 +177,28 @@ function initMap(pos = { lat: 33.12443425433204, lng: -96.79647875401061 }) {
     //   }).setMap(map);
     // }
 
-    polyCollection.push(
-      new google.maps.Polyline({
-        path: nestedArrayToObjects(listOfValidZones[i].border),
-        geodesic: true,
-        strokeColor: listOfValidZones[i].color,
-        strokeOpacity: 1.0,
-        strokeWeight: 2,
-      }).setMap(map)
-    );
+    // polyCollection.push(
+    //   new google.maps.Polyline({
+    //     path: nestedArrayToObjects(listOfValidZones[i].border),
+    //     geodesic: true,
+    //     strokeColor: listOfValidZones[i].color,
+    //     strokeOpacity: 1.0,
+    //     strokeWeight: 2,
+    //   }).setMap(map)
+    // );
+    new google.maps.Polygon({
+      path: nestedArrayToObjects(listOfValidZones[i].border),
+      geodesic: true,
+      strokeColor: listOfValidZones[i].color,
+      strokeOpacity: 1.0,
+      fillOpacity: 0,
+      strokeWeight: 2,
+    }).setMap(map);
 
     new google.maps.Marker({
       position: listOfValidZones[i].location,
       map: map,
-      label: `${i}`,
+      label: `${numToAlpha(i)}`,
     });
   }
   console.log(borderCollection);

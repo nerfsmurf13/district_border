@@ -1042,8 +1042,8 @@ const borders = [
     name: "Lebanon Trail High School",
     type: "High School",
     grades: [9, 10, 11, 12],
-    location: [-96.7939537, 33.1275361],
-    color: "#00FF00",
+    location: { lat: 33.122112, lng: -96.7994581 },
+    color: "#00843d",
     address: "5151 Ohio Dr, Frisco, TX 75035",
     border: [
       [-96.81385388787812, 33.132939303124616],
@@ -1056,8 +1056,8 @@ const borders = [
     name: "Independence High School",
     type: "High School",
     grades: [9, 10, 11, 12],
-    color: "#A020F0",
-    location: [-96.9140486, 33.1448959],
+    color: "#2e1a47",
+    location: { lat: 33.1644791, lng: -96.753769 },
     address: "10555 Independence Pkwy, Frisco, TX 75035",
     border: [
       [-96.82625235396223, 33.183155450395454],

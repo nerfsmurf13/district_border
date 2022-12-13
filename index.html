@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Document</title>
     <script src="borders.js"></script>
-    <script src="app2.js" defer></script>
+    <script src="attendance.zones.js" defer></script>
     <script
       defer
       src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAnvwTCDQRQtmYsAie-EYGDoiWCRUh6Yxs&callback=initMap&libraries=places"
@@ -20,6 +20,7 @@
         <h1 class="text-[50px]">Inside or Out</h1>
         <!-- <div>33.19635117901721, -96.83027085403674</div> -->
         <div class="flex flex-col">
+          frisco isd admin
           <form class="flex mb-2" onsubmit="getGeocoding();return false;">
             <div class="w-[75px]">Address</div>
             <div class="relative">
@@ -27,28 +28,16 @@
                 autocomplete="off"
                 type=""
                 class="h-full px-2 w-[350px] border border-black rounded mr-2"
-                id="dom-address"
+                id="dom-address-input"
               />
-              <ul id="autocomplete-area" class="absolute top-[0-20px] bg-white px-2 shadow z-10"></ul>
             </div>
             <button type="submit" class="w-[200px] border bg-green-500 text-white p-2 rounded" id="checkAddress">
               Check Address
             </button>
           </form>
-          <form class="flex" onsubmit="splitCoords(domGoogle.value);return false;">
-            <div class="w-[75px]">Coords</div>
-            <input type="" class="px-2 w-[350px] border border-black rounded mr-2" id="dom-google" />
-            <button type="submit" class="w-[200px] border bg-green-500 text-white p-2 rounded" id="checkLoc">
-              Check Coords
-            </button>
-          </form>
-          <!-- for reference... ignore | y= 33.12291990532928, x= -97.63570989179748 -->
-          <!-- <div>X: <input type="" class="w-20 border border-black rounded" id="dom-x"></div>
-					<div>Y: <input type="" class="w-20 border border-black rounded" id="dom-y"></div> -->
-
           <div class="hidden flex my-4 text-xl">
             <div class="mr-2">Result:</div>
-            <div id="dom-result">Results here</div>
+            <!-- <div id="dom-result">Results here</div> -->
           </div>
           <!-- <canvas id="html-canvas"> -->
         </div>
@@ -56,8 +45,8 @@
       <div class="flex flex-col m-4">
         <div>Valid Locations</div>
         <div class="flex">
-          <ul>
-            <li class="rounded pl-2 bg-red-200 flex outline outline-1 outline-black/25">
+          <ul class="flex flex-col gap-2" id="dom-results">
+            <!-- <li class="rounded pl-2 bg-red-200 flex outline outline-1 outline-black/25">
               <span class="bg-white p-1">School 1</span>
             </li>
             <li class="rounded pl-2 bg-green-200 flex outline outline-1 outline-black/25">
@@ -65,12 +54,12 @@
             </li>
             <li class="rounded pl-2 bg-purple-200 flex outline outline-1 outline-black/25">
               <span class="bg-white p-1">School 3</span>
-            </li>
+            </li> -->
           </ul>
         </div>
       </div>
       <!--The div element for the map -->
-      <div id="map" class="flex grow"></div>
+      <div id="app-map" class="flex grow"></div>
     </div>
   </body>
 </html>
