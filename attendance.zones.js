@@ -1,3 +1,6 @@
+//These colors make up the possible colors of the results which do not have a color specified (elementary schools)
+const colorOptions = ["#184366", "#e8b20f", "#0e987d", "#e95b37", "#5ab3c4"];
+
 const submitButton = document.getElementById("checkLoc");
 const domAddressInput = document.getElementById("dom-address-input");
 const domX = document.getElementById("dom-x");
@@ -41,6 +44,16 @@ async function getGeocoding() {
   // console.log(latlng);
   // domAddressInput.value = latlng;
 
+  let colorIndex = 0; //works with "colorOptions"
+  function mapColor(x) {
+    if (borders[x].color) {
+      return borders[x].color;
+    }
+    let color = colorOptions[colorIndex];
+    colorIndex++;
+    return color;
+  }
+
   for (let i = 0; i < borders.length; i++) {
     const element = borders[i];
     // console.log(borders[i].border.length);
@@ -56,7 +69,9 @@ async function getGeocoding() {
         type: borders[i].type,
         address: borders[i].address,
         location: borders[i].location,
-        color: borders[i].color ? borders[i].color : `#${Math.floor(Math.random() * 16777215).toString(16)}`,
+        color: colorOptions[i],
+        color: mapColor(i),
+        // color: borders[i].color ? borders[i].color : '#{Math.floor(Math.random() * 16777215).toString(16)}',
         border: borders[i].border,
       };
       listOfValidZones.push(entry);
@@ -90,19 +105,16 @@ function drawResults() {
     //   <span class="bg-white p-1 flex grow"><strong class="mx-1">${i}.</strong> ${result.name} | Grades: ${result.grades} | ${result.address}</span>
     // </li>`;
     rawHtml += `
-	<li>
-                          <div
-                            style="display: flex; border-radius: 4px; overflow: hidden; border: ${
-                              result.color
-                            } 1px solid"
-                          >
-                            <div style="background-color: ${result.color}; width: 10px"></div>
-                            <div><span style="margin-left: 1rem">${numToAlpha(i)}.</span> ${result.color} ${
-      result.name
-    } | Grades: ${result.grades} | ${result.address}</div>
-                          </div>
-                        </li>
-	`;
+      <li>
+        <div style="display: flex; border-radius: 4px; overflow: hidden; border: ${result.color} 1px solid">
+          <div style="background-color: ${result.color}; width: 10px"></div>
+          <div>
+            <span style="margin-left: 1rem">${numToAlpha(i)}. </span> ${result.name} | Grades:
+            ${result.grades} | ${result.address}
+          </div>
+        </div>
+      </li>
+    `;
     console.log(result);
     // console.log(test);
   }
@@ -119,6 +131,18 @@ function initMap(pos = { lat: 33.12443425433204, lng: -96.79647875401061 }) {
   //   loc = adminBldg;
   // }
 
+  const icons = {
+    // origin: {
+    //   icon: iconBase + "parking_lot_maps.png",
+    // },
+    // library: {
+    //   icon: iconBase + "library_maps.png",
+    // },
+    // info: {
+    //   icon: iconBase + "info-i_maps.png",
+    // },
+  };
+
   //Autocomplete
   const options = {
     fields: ["formatted_address", "geometry", "name"],
@@ -129,11 +153,11 @@ function initMap(pos = { lat: 33.12443425433204, lng: -96.79647875401061 }) {
   const autocomplete = new google.maps.places.SearchBox(domAddressInput, options);
 
   // The location of FISD Admin
-  // The map, centered at FISD Admin
+  // The map, centered at FISD Admin by default
   const map = new google.maps.Map(document.getElementById("app-map"), {
     zoom: 12,
     center: pos,
-    mapTypeId: "terrain",
+    mapTypeId: "roadmap",
   });
 
   // The marker, positioned at FISD Admin
@@ -144,54 +168,21 @@ function initMap(pos = { lat: 33.12443425433204, lng: -96.79647875401061 }) {
   autocomplete.bindTo("bounds", map);
 
   let borderCollection = [];
-  let polyCollection = [];
 
+  //Display Data on map for each valid zone/school
   for (let i = 0; i < listOfValidZones.length; i++) {
-    // const element = array[i];
+    // if (locInfo.status == "OK") {
 
-    let locInfo = null;
-    function getGeocoding2(x) {
-      let query = encodeURI(x);
-      console.log("calling");
-      // const smallResult = await fetch(
-      //   `https://maps.googleapis.com/maps/api/geocode/json?address=${query}&key=AIzaSyBMobqGzdmYFvsxeZJ3YunRull6NYefekM`
-      // ).then((response) => (res = response.json()));
-      // locInfo = smallResult;
-      // locInfo = `${result.results[0].geometry.location.lat}, ${result.results[0].geometry.location.lng}`;
-      console.log(locInfo);
-      // console.log(locInfo.results[0].geometry.location);
-      // domAddress.value = result.results[0].formatted_address;
-      // let latlng = `${result.results[0].geometry.location.lat}, ${result.results[0].geometry.location.lng}`;
-      // console.log(latlng);
-      // domGoogle.value = latlng;
-    }
-    getGeocoding2(listOfValidZones[i].address);
-    // console.log(listOfValidZones[i])
-
-    // console.log(tempPos);
+    // }
     borderCollection.push(nestedArrayToObjects(listOfValidZones[i].border));
 
-    // if (locInfo.status == "OK") {
-    //   new google.maps.Marker({
-    //     position: locInfo.results[0].geometry.location,
-    //   }).setMap(map);
-    // }
-
-    // polyCollection.push(
-    //   new google.maps.Polyline({
-    //     path: nestedArrayToObjects(listOfValidZones[i].border),
-    //     geodesic: true,
-    //     strokeColor: listOfValidZones[i].color,
-    //     strokeOpacity: 1.0,
-    //     strokeWeight: 2,
-    //   }).setMap(map)
-    // );
     new google.maps.Polygon({
       path: nestedArrayToObjects(listOfValidZones[i].border),
       geodesic: true,
       strokeColor: listOfValidZones[i].color,
-      strokeOpacity: 1.0,
-      fillOpacity: 0,
+      strokeOpacity: 1,
+      fillColor: listOfValidZones[i].color,
+      fillOpacity: 0.1,
       strokeWeight: 2,
     }).setMap(map);
 
@@ -203,7 +194,8 @@ function initMap(pos = { lat: 33.12443425433204, lng: -96.79647875401061 }) {
   }
   console.log(borderCollection);
 }
-// ========================Actual Polygon Logic========================
+
+// ========================Actual "Is It Within Ze Polygon" Logic========================
 
 const onLine = (l1, p) => {
   if (
@@ -268,6 +260,6 @@ const checkInside = (poly, p) => {
     i = (i + 1) % n;
   } while (i != 0);
 
-  // When count is odd
+  // When count is odd, return true, else false
   return count & 1;
 };

@@ -929,7 +929,7 @@
                   <div class="row row-content dept-content">
                     <div class="row">
                       <form onsubmit="getGeocoding();return false;" class="form form-inline">
-                        <div class="col-xs-10">
+                        <div class="col-xs-12 col-md-10 margin-bot-20">
                           <input
                             placeholder="Search Address"
                             type="text"
@@ -939,15 +939,17 @@
                             style="width: 100%"
                           />
                         </div>
-                        <button
-                          id="checkAddress"
-                          type="button"
-                          class="btn btn-primary"
-                          onclick="getGeocoding()"
-                          style="border-radius: 4px; overflow: hidden"
-                        >
-                          Search
-                        </button>
+                        <div class="col-xs-12 col-md-2">
+                          <button
+                            id="checkAddress"
+                            type="button"
+                            class="btn btn-primary"
+                            onclick="getGeocoding()"
+                            style="border-radius: 4px; overflow: hidden; width: 100%"
+                          >
+                            Search
+                          </button>
+                        </div>
                       </form>
                     </div>
                     <div class="row row-content">
