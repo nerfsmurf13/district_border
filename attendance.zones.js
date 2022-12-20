@@ -131,6 +131,17 @@ function initMap(pos = { lat: 33.12443425433204, lng: -96.79647875401061 }) {
   //   loc = adminBldg;
   // }
 
+  const markerHome = {
+    path: "M32 5a21 21 0 0 0-21 21c0 17 21 33 21 33s21-16 21-33A21 21 0 0 0 32 5zm7 20v10h-5v-5a2 2 0 0 0-2-2 2 2 0 0 0-2 2v5h-5V25h-4l11-9 11 9z",
+    fillColor: "#ed4733",
+    strokeColor: "#c82f25",
+    fillOpacity: 1,
+    strokeWeight: 0.5,
+    rotation: 0,
+    scale: 0.75,
+    anchor: new google.maps.Point(30, 60),
+  };
+
   const icons = {
     // origin: {
     //   icon: iconBase + "parking_lot_maps.png",
@@ -149,7 +160,6 @@ function initMap(pos = { lat: 33.12443425433204, lng: -96.79647875401061 }) {
     strictBounds: false,
     types: ["establishment"],
   };
-  const geocoder = new google.maps.Geocoder();
   const autocomplete = new google.maps.places.SearchBox(domAddressInput, options);
 
   // The location of FISD Admin
@@ -164,6 +174,8 @@ function initMap(pos = { lat: 33.12443425433204, lng: -96.79647875401061 }) {
   const marker = new google.maps.Marker({
     position: pos,
     map: map,
+    // icon: markerHome,
+    icon: markerHome,
   });
   autocomplete.bindTo("bounds", map);
 
@@ -174,6 +186,20 @@ function initMap(pos = { lat: 33.12443425433204, lng: -96.79647875401061 }) {
     // if (locInfo.status == "OK") {
 
     // }
+    const contentString = /*html*/ `
+    <div>
+      <h3>${listOfValidZones[i].name}</h3>
+      <ul>
+        <li>${listOfValidZones[i].grades}</li>
+      </ul>
+    </div>
+    `;
+
+    const infowindow = new google.maps.InfoWindow({
+      content: contentString,
+      ariaLabel: listOfValidZones[i].name,
+    });
+
     borderCollection.push(nestedArrayToObjects(listOfValidZones[i].border));
 
     new google.maps.Polygon({
@@ -186,10 +212,20 @@ function initMap(pos = { lat: 33.12443425433204, lng: -96.79647875401061 }) {
       strokeWeight: 2,
     }).setMap(map);
 
-    new google.maps.Marker({
+    let mark = new google.maps.Marker({
       position: listOfValidZones[i].location,
       map: map,
       label: `${numToAlpha(i)}`,
+      title: listOfValidZones[i].name,
+      sclae: 0.75,
+    });
+
+    mark.addListener("click", () => {
+      // console.log(e);
+      infowindow.open({
+        anchor: mark,
+        map,
+      });
     });
   }
   console.log(borderCollection);
