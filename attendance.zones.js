@@ -59,27 +59,29 @@ async function getGeocoding() {
   console.log("Border Entries: " + 0);
   if (result.results.length > 0) {
     for (let i = 0; i < borders.length; i++) {
-      const element = borders[i];
-      const verdict = checkInside(borders[i].border, [
-        result.results[0].geometry.location.lng,
-        result.results[0].geometry.location.lat,
-      ]);
-
-      if (verdict) {
-        let entry = {
-          name: borders[i].name,
-          grades: borders[i].grades,
-          type: borders[i].type,
-          address: borders[i].address,
-          location: borders[i].location,
-          color: colorOptions[i],
-          color: mapColor(i),
-          // color: borders[i].color ? borders[i].color : '#{Math.floor(Math.random() * 16777215).toString(16)}',
-          border: borders[i].border,
-        };
-        listOfValidZones.push(entry);
+      const localBorders = borders[i].border;
+      for (specificBorder of localBorders) {
+        // console.log(specificBorder[0]);
+        let verdict = checkInside(specificBorder[0], [
+          result.results[0].geometry.location.lng,
+          result.results[0].geometry.location.lat,
+        ]);
+        if (verdict) {
+          let entry = {
+            name: borders[i].name,
+            grades: borders[i].grades,
+            type: borders[i].type,
+            address: borders[i].address,
+            location: borders[i].location,
+            color: colorOptions[i],
+            color: mapColor(i),
+            border: borders[i].border,
+          };
+          listOfValidZones.push(entry);
+        }
       }
     }
+    console.log("listOfValidZones: ", listOfValidZones);
     initMap(result.results[0].geometry.location);
   }
   drawResults(result);
@@ -88,7 +90,7 @@ async function getGeocoding() {
 }
 
 function nestedArrayToObjects(x) {
-  console.log(x);
+  console.log("nestedArrayToObjects: ", x);
   newObj = [];
   for (i of x) {
     let temp = { lat: i[1], lng: i[0] };
@@ -213,13 +215,10 @@ function initMap(pos = { lat: 33.12443425433204, lng: -96.79647875401061 }) {
   });
   autocomplete.bindTo("bounds", map);
 
-  let borderCollection = [];
-
+  // let borderCollection = [];
+  // console.log(borders[13].border);
   //Display Data on map for each valid zone/school
   for (let i = 0; i < listOfValidZones.length; i++) {
-    // if (locInfo.status == "OK") {
-
-    // }
     const contentString = /*html*/ `
     <div>
       <h3>${listOfValidZones[i].name}</h3>
@@ -234,33 +233,37 @@ function initMap(pos = { lat: 33.12443425433204, lng: -96.79647875401061 }) {
       ariaLabel: listOfValidZones[i].name,
     });
 
-    borderCollection.push(nestedArrayToObjects(listOfValidZones[i].border));
+    // borderCollection.push(nestedArrayToObjects(listOfValidZones[i].border));
 
-    new google.maps.Polygon({
-      path: nestedArrayToObjects(listOfValidZones[i].border),
-      geodesic: true,
-      strokeColor: listOfValidZones[i].color,
-      strokeOpacity: 1,
-      fillColor: listOfValidZones[i].color,
-      fillOpacity: 0.1,
-      strokeWeight: 2,
-    }).setMap(map);
+    for (const iterator of listOfValidZones[i].border) {
+      console.log(iterator);
+      new google.maps.Polygon({
+        path: nestedArrayToObjects(iterator[0]),
+        geodesic: true,
+        strokeColor: listOfValidZones[i].color,
+        strokeOpacity: 1,
+        fillColor: listOfValidZones[i].color,
+        fillOpacity: 0.1,
+        strokeWeight: 2,
+      }).setMap(map);
 
-    let mark = new google.maps.Marker({
-      position: listOfValidZones[i].location,
-      map: map,
-      label: `${numToAlpha(i)}`,
-      title: listOfValidZones[i].name,
-      sclae: 0.75,
-    });
-
-    mark.addListener("click", () => {
-      // console.log(e);
-      infowindow.open({
-        anchor: mark,
-        map,
+      let mark = new google.maps.Marker({
+        position: listOfValidZones[i].location,
+        map: map,
+        label: `${numToAlpha(i)}`,
+        title: listOfValidZones[i].name,
+        sclae: 0.75,
       });
-    });
+
+      mark.addListener("click", () => {
+        // console.log(e);
+        infowindow.open({
+          anchor: mark,
+          map,
+        });
+      });
+    }
+    // if (listOfValidZones[i].border.length)
   }
   // let test = [
   //   [-96.79797422283924, 33.09298362704685],
@@ -283,22 +286,22 @@ function initMap(pos = { lat: 33.12443425433204, lng: -96.79647875401061 }) {
   // }).setMap(map);
   //Display Data on map for each valid zone/school
 
-  for (let i = 0; i < testCoverage.length; i++) {
-    console.log(testCoverage);
-    borderCollection.push(nestedArrayToObjects(testCoverage[i]));
+  // for (let i = 0; i < testCoverage.length; i++) {
+  //   console.log(testCoverage);
+  //   borderCollection.push(nestedArrayToObjects(testCoverage[i]));
 
-    new google.maps.Polygon({
-      path: nestedArrayToObjects(testCoverage[i]),
-      geodesic: true,
-      strokeColor: "#000",
-      strokeOpacity: 1,
-      fillColor: "#000",
-      fillOpacity: 0.5,
-      strokeWeight: 2,
-    }).setMap(map);
-  }
+  //   new google.maps.Polygon({
+  //     path: nestedArrayToObjects(testCoverage[i]),
+  //     geodesic: true,
+  //     strokeColor: "#000",
+  //     strokeOpacity: 1,
+  //     fillColor: "#000",
+  //     fillOpacity: 0.5,
+  //     strokeWeight: 2,
+  //   }).setMap(map);
+  // }
 
-  console.log(borderCollection);
+  // console.log(borderCollection);
 }
 
 // ========================Actual "Is It Within Ze Polygon" Logic========================

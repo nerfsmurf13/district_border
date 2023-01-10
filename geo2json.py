@@ -20,39 +20,37 @@ def grabLoc(x):
 	return tempLoc
 
 
-f = open("EL_23_24_GRADE_K_5_LayerToKM.JSON", "r")
+f = open("HS_23_24_GRD_9_12_LayerToKML (2).JSON", "r")
 inputJson = json.loads(f.read())
-inputType = "Elementary"
-
+inputType = "High School"
+outFilename = 'geoHS.json'
 
 outputJson=[]
+for x in inputJson['features']:
+	tempFetch = grabLoc(f"{x['properties']['Name']} {inputType}")
+	tempJson={}
+	tempJson['name']=f"{x['properties']['Name']} {inputType}"
+	tempJson['type']=inputType
+	tempJson['grades']=x['properties']['Grades']
+	tempJson['location']=tempFetch['location']
+	tempJson['url']=''
+	tempJson['color']=''
+	tempJson['address']=tempFetch['formatted_address']
+	tempJson['border']=x['geometry']['coordinates'][0][0]
+	outputJson.append(tempJson)
+
+# Testing, without Fetching
 # for x in inputJson['features']:
-# 	tempFetch = grabLoc(f"{x['properties']['Name']} {inputType}")
 # 	tempJson={}
 # 	tempJson['name']=f"{x['properties']['Name']} {inputType}"
 # 	tempJson['type']=inputType
 # 	tempJson['grades']=x['properties']['Grades']
 # 	tempJson['location']={ 'lat': 33.1812999, 'lng': -96.75180379999999 }
-# 	tempJson['location']=tempFetch['location']
 # 	tempJson['url']=''
 # 	tempJson['color']=''
 # 	tempJson['address']='123 fakestreet'
-# 	tempJson['address']=tempFetch['formatted_address']
-# 	tempJson['border']=x['geometry']['coordinates'][0][0]
+# 	tempJson['border']=x['geometry']['coordinates']
 # 	outputJson.append(tempJson)
-
-# Testing, without Fetching
-for x in inputJson['features']:
-	tempJson={}
-	tempJson['name']=f"{x['properties']['Name']} {inputType}"
-	tempJson['type']=inputType
-	tempJson['grades']=x['properties']['Grades']
-	tempJson['location']={ 'lat': 33.1812999, 'lng': -96.75180379999999 }
-	tempJson['url']=''
-	tempJson['color']=''
-	tempJson['address']='123 fakestreet'
-	tempJson['border']=x['geometry']['coordinates']
-	outputJson.append(tempJson)
 
 ##Finding Duplicates
 # duplicates = []
@@ -68,5 +66,5 @@ for x in inputJson['features']:
 
 # print(outputJson)
 outputStr=json.dumps(outputJson)
-with open("pyOutput.json", "w") as outfile:
+with open(outFilename, "w") as outfile:
 	outfile.write(outputStr)
