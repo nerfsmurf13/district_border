@@ -1,21 +1,22 @@
 //These colors make up the possible colors of the results which do not have a color specified (elementary schools)
 const colorOptions = ["#184366", "#e8b20f", "#0e987d", "#e95b37", "#5ab3c4"];
-
+//API key for Google
+const apiKey = "AIzaSyBMobqGzdmYFvsxeZJ3YunRull6NYefekM";
+//DOM Elements
 const submitButton = document.getElementById("checkLoc");
 const domAddressInput = document.getElementById("dom-address-input");
 const domX = document.getElementById("dom-x");
 const domY = document.getElementById("dom-y");
-// const domResult = document.getElementById("dom-result");
 const domResults = document.getElementById("dom-results");
-// const domAddress = document.getElementById("dom-address");
-const apiKey = "AIzaSyBMobqGzdmYFvsxeZJ3YunRull6NYefekM";
-
 const originInput = document.getElementById("dom-address");
 const autocompleteArea = document.getElementById("autocomplete-area");
-// let input
 
-// num to alpha
+// Convert 0-indexed numbers to alphabet. 0=>A , 25=>Z, 26=>AA, 55=>BD
 function numToAlpha(x) {
+  if (x < 0 || x > 701) {
+    console.log("function numToAlpha(x)'s Input is too large. 0-701");
+    return "Bad Input";
+  }
   let alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
   let div = 26;
   if (x < div) {
@@ -26,8 +27,7 @@ function numToAlpha(x) {
   }
 }
 
-// let data2 = "";
-let searching = true;
+// let searching = true;
 let listOfValidZones = [];
 async function getGeocoding() {
   listOfValidZones = [];
@@ -54,36 +54,41 @@ async function getGeocoding() {
     return color;
   }
 
-  for (let i = 0; i < borders.length; i++) {
-    const element = borders[i];
-    // console.log(borders[i].border.length);
-    let verdict = checkInside(borders[i].border, [
-      result.results[0].geometry.location.lng,
-      result.results[0].geometry.location.lat,
-    ]);
+  console.log(result.results);
 
-    if (verdict) {
-      let entry = {
-        name: borders[i].name,
-        grades: borders[i].grades,
-        type: borders[i].type,
-        address: borders[i].address,
-        location: borders[i].location,
-        color: colorOptions[i],
-        color: mapColor(i),
-        // color: borders[i].color ? borders[i].color : '#{Math.floor(Math.random() * 16777215).toString(16)}',
-        border: borders[i].border,
-      };
-      listOfValidZones.push(entry);
+  console.log("Border Entries: " + 0);
+  if (result.results.length > 0) {
+    for (let i = 0; i < borders.length; i++) {
+      const element = borders[i];
+      const verdict = checkInside(borders[i].border, [
+        result.results[0].geometry.location.lng,
+        result.results[0].geometry.location.lat,
+      ]);
+
+      if (verdict) {
+        let entry = {
+          name: borders[i].name,
+          grades: borders[i].grades,
+          type: borders[i].type,
+          address: borders[i].address,
+          location: borders[i].location,
+          color: colorOptions[i],
+          color: mapColor(i),
+          // color: borders[i].color ? borders[i].color : '#{Math.floor(Math.random() * 16777215).toString(16)}',
+          border: borders[i].border,
+        };
+        listOfValidZones.push(entry);
+      }
     }
+    initMap(result.results[0].geometry.location);
   }
-  // console.log(listOfValidZones);
+  drawResults(result);
 
-  drawResults();
-  initMap(result.results[0].geometry.location);
+  // console.log(listOfValidZones);
 }
 
 function nestedArrayToObjects(x) {
+  console.log(x);
   newObj = [];
   for (i of x) {
     let temp = { lat: i[1], lng: i[0] };
@@ -93,18 +98,35 @@ function nestedArrayToObjects(x) {
   return newObj;
 }
 
+//=========================Test Function for checking Coverage on map==============================
+function checkCoverage(schoolTypeString) {
+  let coverageArr = [];
+  for (i of borders) {
+    // console.log(i);
+    if (i.type == schoolTypeString) {
+      coverageArr.push(i.border);
+    }
+  }
+  // console.log(coverageArr);
+  return coverageArr;
+}
+let testCoverage = checkCoverage("Elementary");
+
 //=========================Draw Results==============================
 function clearResults() {}
-function drawResults() {
+// drawResults(resultInput : Object | insideDistrictBoolean = : Boolean)
+function drawResults(resultInput, insideDistrictBoolean) {
+  let result = resultInput;
   domResults.innerHTML = "";
   rawHtml = "";
-  for (const [i, result] of listOfValidZones.entries()) {
-    // rawHtml += `<div>${result.name} | ${result.address}</div>`;
-    // if (result.location)
-    //   rawHtml += `<li class="rounded pl-2 bg-[${result.color}] flex outline outline-1 outline-black/25">
-    //   <span class="bg-white p-1 flex grow"><strong class="mx-1">${i}.</strong> ${result.name} | Grades: ${result.grades} | ${result.address}</span>
-    // </li>`;
-    rawHtml += `
+  if (result.results.length > 0) {
+    for (const [i, result] of listOfValidZones.entries()) {
+      // rawHtml += `<div>${result.name} | ${result.address}</div>`;
+      // if (result.location)
+      //   rawHtml += `<li class="rounded pl-2 bg-[${result.color}] flex outline outline-1 outline-black/25">
+      //   <span class="bg-white p-1 flex grow"><strong class="mx-1">${i}.</strong> ${result.name} | Grades: ${result.grades} | ${result.address}</span>
+      // </li>`;
+      rawHtml += `
       <li>
         <div style="display: flex; border-radius: 4px; overflow: hidden; border: ${result.color} 1px solid">
           <div style="background-color: ${result.color}; width: 10px"></div>
@@ -115,8 +137,20 @@ function drawResults() {
         </div>
       </li>
     `;
-    console.log(result);
-    // console.log(test);
+      console.log(result);
+      // console.log(test);
+    }
+  } else if (result.results == 0) {
+    rawHtml += `
+      <li>
+        <div style="display: flex; border-radius: 4px; overflow: hidden; border: #184366 1px solid">
+          <div style="background-color: red; width: 10px"></div>
+          <div>
+            <span style="padding-left: 5px;"> No results found for '${domAddressInput.value}'!</span>
+          </div>
+        </div>
+      </li>
+    `;
   }
   domResults.innerHTML = rawHtml;
 }
@@ -228,6 +262,42 @@ function initMap(pos = { lat: 33.12443425433204, lng: -96.79647875401061 }) {
       });
     });
   }
+  // let test = [
+  //   [-96.79797422283924, 33.09298362704685],
+  //   [-96.79861474707513, 33.09345664510581],
+  //   [-96.80039510462426, 33.09348257802917],
+  //   [-96.80040410984057, 33.09194227419761],
+  //   [-96.7968805965496, 33.09185442816792],
+  //   [-96.79687119596838, 33.09267969164591],
+  //   [-96.79788175069957, 33.09269347925507],
+  //   [-96.79797422283924, 33.09298362704685],
+  // ];
+  // new google.maps.Polygon({
+  //   path: nestedArrayToObjects(test),
+  //   geodesic: true,
+  //   strokeColor: "#000",
+  //   strokeOpacity: 1,
+  //   fillColor: "#000",
+  //   fillOpacity: 0.1,
+  //   strokeWeight: 2,
+  // }).setMap(map);
+  //Display Data on map for each valid zone/school
+
+  for (let i = 0; i < testCoverage.length; i++) {
+    console.log(testCoverage);
+    borderCollection.push(nestedArrayToObjects(testCoverage[i]));
+
+    new google.maps.Polygon({
+      path: nestedArrayToObjects(testCoverage[i]),
+      geodesic: true,
+      strokeColor: "#000",
+      strokeOpacity: 1,
+      fillColor: "#000",
+      fillOpacity: 0.5,
+      strokeWeight: 2,
+    }).setMap(map);
+  }
+
   console.log(borderCollection);
 }
 
