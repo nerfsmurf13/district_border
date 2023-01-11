@@ -1,3 +1,8 @@
+function initialize() {
+  initMap();
+  initAutocomplete();
+}
+
 //These colors make up the possible colors of the results which do not have a color specified (i.e. elementary schools)
 const colorOptions = ["#184366", "#e8b20f", "#0e987d", "#e95b37", "#5ab3c4"];
 //API key for Google
@@ -29,6 +34,7 @@ function numToAlpha(x) {
 
 //Autocomplete
 let autocomplete;
+let selectedPlace = { location: {}, address: "" };
 function initAutocomplete() {
   //coppell
   const southwest = { lat: 32.95521153131294, lng: -97.0215929504037 };
@@ -39,91 +45,81 @@ function initAutocomplete() {
   const autocomplete = new google.maps.places.Autocomplete(domAddressInput, {
     bounds: newBounds,
     componentRestrictions: { country: "us" },
-    fields: ["address_components", "geometry"],
+    fields: ["address_components", "geometry.location"],
     strictBounds: true,
     types: ["premise", "street_address"],
   });
 
-  autocomplete.addListener("place_changed", onPlaceChanged);
-  function onPlaceChanged() {
+  // https://stackoverflow.com/questions/28443234/google-places-autocomplete-force-select-first-option-if-its-the-only-option-vi
+
+  autocomplete.addListener("place_changed", async function (e) {
     let place = autocomplete.getPlace();
-    console.log(place);
-    console.log("Autocomplete Firing");
-    console.log(place.address_components[0]);
-    console.log(place.geometry.location.lat());
-    console.log(place.geometry.location.lng());
-  }
+    // console.log(place);
+    // console.log("Autocomplete Firing");
+    // console.log(place.address_components[0]);
+    // console.log(place.geometry.location.lat());
+    // console.log(place.geometry.location.lng());
+    if (!place.geometry) {
+      console.log(place);
+    } else {
+      selectedPlace["location"] = await { lat: place.geometry.location.lat(), lng: place.geometry.location.lng() };
+      // console.log(selectedPlace);
+    }
+  });
 }
 
 let listOfValidZones = [];
-async function getGeocoding() {
+function getGeocoding() {
   console.log("Fetching!");
   listOfValidZones = [];
-  let query = encodeURI(domAddressInput.value);
-  const result = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?address=${query}&key=${apiKey}`).then(
-    (response) => (res = response.json())
-  );
-  console.log("Google Response: ", result.results);
-  console.log("Google Response: ", result.results.length);
+  // let query = encodeURI(domAddressInput.value);
+  // const result = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?address=${query}&key=${apiKey}`).then(
+  //   (response) => (res = response.json())
+  // );
+
+  console.log(selectedPlace.location);
+
+  // if (domAddressInput.value.trim()[0] == result.results[0].address_components[0].long_name[0]) {
+  console.log("Its an address");
+
+  let colorIndex = 0; //works with "colorOptions"
+  function mapColor(x) {
+    if (borders[x].color) {
+      return borders[x].color;
+    }
+    let color = colorOptions[colorIndex];
+    colorIndex++;
+    return color;
+  }
+
+  // console.log("Border Entries: " + 0);
+  let insideDistrict;
+  let count = 0;
 
   // if (result.results.length > 0) {
-  //   console.log(
-  //     `Comparing User Address Number ${domAddressInput.value.trim()[0]} -vs- Google Address Number ${
-  //       result.results[0].address_components[0].long_name[0]
-  //     }`
-  //   );
-  // }
-
-  if (domAddressInput.value.trim()[0] == result.results[0].address_components[0].long_name[0]) {
-    console.log("Its an address");
-
-    let colorIndex = 0; //works with "colorOptions"
-    function mapColor(x) {
-      if (borders[x].color) {
-        return borders[x].color;
+  for (let i = 0; i < borders.length; i++) {
+    const localBorders = borders[i].border;
+    for (specificBorder of localBorders) {
+      // console.log(specificBorder[0]);
+      insideDistrict = checkInside(specificBorder[0], [selectedPlace.location.lng, selectedPlace.location.lat]);
+      if (insideDistrict) {
+        count++;
+        let entry = {
+          name: borders[i].name,
+          grades: borders[i].grades,
+          type: borders[i].type,
+          address: borders[i].address,
+          location: borders[i].location,
+          color: colorOptions[i],
+          color: mapColor(i),
+          border: borders[i].border,
+        };
+        listOfValidZones.push(entry);
       }
-      let color = colorOptions[colorIndex];
-      colorIndex++;
-      return color;
     }
-
-    // console.log("Border Entries: " + 0);
-    let insideDistrict;
-    let count = 0;
-
-    if (result.results.length > 0) {
-      for (let i = 0; i < borders.length; i++) {
-        const localBorders = borders[i].border;
-        for (specificBorder of localBorders) {
-          // console.log(specificBorder[0]);
-          insideDistrict = checkInside(specificBorder[0], [
-            result.results[0].geometry.location.lng,
-            result.results[0].geometry.location.lat,
-          ]);
-          if (insideDistrict) {
-            count++;
-            let entry = {
-              name: borders[i].name,
-              grades: borders[i].grades,
-              type: borders[i].type,
-              address: borders[i].address,
-              location: borders[i].location,
-              color: colorOptions[i],
-              color: mapColor(i),
-              border: borders[i].border,
-            };
-            listOfValidZones.push(entry);
-          }
-        }
-      }
-      initMap(result.results[0].geometry.location);
-    }
-
-    drawResults(result, count);
-  } else {
-    console.log("Its not an address");
-    drawResults(result, -1);
   }
+  initMap(selectedPlace.location);
+  drawResults(selectedPlace.location, count);
 }
 
 function nestedArrayToObjects(x) {
@@ -147,68 +143,67 @@ function checkCoverage(schoolTypeString) {
   }
   return coverageArr;
 }
-let testCoverage = checkCoverage("Elementary");
-// let testCoverage = checkCoverage("Middle School");
-// let testCoverage = checkCoverage("High School");
 
 //=========================Draw Results==============================
 // function clearResults() {}
 
 // drawResults(resultInput : Object | insideDistrictBoolean = : Boolean)
 function drawResults(resultInput, insideDistrictCounter) {
-  let result = resultInput;
+  // let result = resultInput;
+  console.log(resultInput);
   domResults.innerHTML = "";
   rawHtml = "";
 
-  if (result.results == 0 || insideDistrictCounter == -1) {
-    rawHtml += `
-      <li>
-        <div style="display: flex; border-radius: 4px; overflow: hidden; border: #184366 1px solid">
-          <div style="background-color: red; width: 10px"></div>
-          <div>
-            <span style="padding-left: 5px;"> No results found for '${domAddressInput.value}'!</span>
-          </div>
-        </div>
-      </li>
-    `;
-    domResults.innerHTML = rawHtml;
-    return;
-  }
-  if (insideDistrictCounter == 0) {
-    rawHtml += `
-      <li>
-        <div style="display: flex; border-radius: 4px; overflow: hidden; border: red 1px solid">
-        <div style="background-color: red; width: 10px"></div>          <div>
-            <span style="padding-left: 5px;">'${domAddressInput.value}' is out of district !</span>
-          </div>
-        </div>
-      </li>
-    `;
-    domResults.innerHTML = rawHtml;
-    return;
-  }
+  // if (result.results == 0 || insideDistrictCounter == -1) {
+  //   rawHtml += `
+  //     <li>
+  //       <div style="display: flex; border-radius: 4px; overflow: hidden; border: #184366 1px solid">
+  //         <div style="background-color: red; width: 10px"></div>
+  //         <div>
+  //           <span style="padding-left: 5px;"> No results found for '${domAddressInput.value}'!</span>
+  //         </div>
+  //       </div>
+  //     </li>
+  //   `;
+  //   domResults.innerHTML = rawHtml;
+  //   return;
+  // }
+  // if (insideDistrictCounter == 0) {
+  //   rawHtml += `
+  //     <li>
+  //       <div style="display: flex; border-radius: 4px; overflow: hidden; border: red 1px solid">
+  //       <div style="background-color: red; width: 10px"></div>          <div>
+  //           <span style="padding-left: 5px;">'${domAddressInput.value}' is out of district !</span>
+  //         </div>
+  //       </div>
+  //     </li>
+  //   `;
+  //   domResults.innerHTML = rawHtml;
+  //   return;
+  // }
 
-  if (result.results.length > 0) {
-    for (const [i, result] of listOfValidZones.entries()) {
-      rawHtml += `
-        <li>
-          <div style="display: flex; border-radius: 4px; overflow: hidden; border: ${result.color} 1px solid">
-            <div style="background-color: ${result.color}; width: 10px"></div>
-            <div>
-              <span style="margin-left: 1rem">${numToAlpha(i)}. </span> ${result.name} | Grades:
-              ${result.grades} | ${result.address}
-            </div>
-          </div>
-        </li>
-      `;
-      console.log(result);
-    }
-    domResults.innerHTML = rawHtml;
-    return;
-  }
+  // if (result.results.length > 0) {
+  //   for (const [i, result] of listOfValidZones.entries()) {
+  //     rawHtml += `
+  //       <li>
+  //         <div style="display: flex; border-radius: 4px; overflow: hidden; border: ${result.color} 1px solid">
+  //           <div style="background-color: ${result.color}; width: 10px"></div>
+  //           <div>
+  //             <span style="margin-left: 1rem">${numToAlpha(i)}. </span> ${result.name} | Grades:
+  //             ${result.grades} | ${result.address}
+  //           </div>
+  //         </div>
+  //       </li>
+  //     `;
+  //     console.log(result);
+  //   }
+  //   domResults.innerHTML = rawHtml;
+  //   return;
+  // }
 }
 
 //=========================Drawing on Maps==============================
+let map;
 function initMap(pos = { lat: 33.12443425433204, lng: -96.79647875401061 }) {
   const markerHome = {
     path: "M32 5a21 21 0 0 0-21 21c0 17 21 33 21 33s21-16 21-33A21 21 0 0 0 32 5zm7 20v10h-5v-5a2 2 0 0 0-2-2 2 2 0 0 0-2 2v5h-5V25h-4l11-9 11 9z",
@@ -221,21 +216,21 @@ function initMap(pos = { lat: 33.12443425433204, lng: -96.79647875401061 }) {
     anchor: new google.maps.Point(30, 60),
   };
 
-  const icons = {
-    // origin: {
-    //   icon: iconBase + "parking_lot_maps.png",
-    // },
-    // library: {
-    //   icon: iconBase + "library_maps.png",
-    // },
-    // info: {
-    //   icon: iconBase + "info-i_maps.png",
-    // },
-  };
+  // const icons = {
+  //   // origin: {
+  //   //   icon: iconBase + "parking_lot_maps.png",
+  //   // },
+  //   // library: {
+  //   //   icon: iconBase + "library_maps.png",
+  //   // },
+  //   // info: {
+  //   //   icon: iconBase + "info-i_maps.png",
+  //   // },
+  // };
 
   // The location of FISD Admin
   // The map, centered at FISD Admin by default
-  const map = new google.maps.Map(document.getElementById("app-map"), {
+  map = new google.maps.Map(document.getElementById("app-map"), {
     zoom: 14,
     center: pos,
     mapTypeId: "roadmap",
@@ -248,10 +243,7 @@ function initMap(pos = { lat: 33.12443425433204, lng: -96.79647875401061 }) {
     // icon: markerHome,
     icon: markerHome,
   });
-  // autocomplete.bindTo("bounds", map);
 
-  // let borderCollection = [];
-  // console.log(borders[13].border);
   //Display Data on map for each valid zone/school
   for (let i = 0; i < listOfValidZones.length; i++) {
     const contentString = /*html*/ `
@@ -268,10 +260,7 @@ function initMap(pos = { lat: 33.12443425433204, lng: -96.79647875401061 }) {
       ariaLabel: listOfValidZones[i].name,
     });
 
-    // borderCollection.push(nestedArrayToObjects(listOfValidZones[i].border));
-
     for (const iterator of listOfValidZones[i].border) {
-      // console.log(iterator);
       new google.maps.Polygon({
         path: nestedArrayToObjects(iterator[0]),
         geodesic: true,
@@ -291,33 +280,13 @@ function initMap(pos = { lat: 33.12443425433204, lng: -96.79647875401061 }) {
       });
 
       mark.addListener("click", () => {
-        // console.log(e);
         infowindow.open({
           anchor: mark,
           map,
         });
       });
     }
-    // if (listOfValidZones[i].border.length)
   }
-
-  //Display Data on map for each valid zone/school
-  // for (let i = 0; i < testCoverage.length; i++) {
-  //   console.log(testCoverage);
-  //   borderCollection.push(nestedArrayToObjects(testCoverage[i]));
-
-  //   new google.maps.Polygon({
-  //     path: nestedArrayToObjects(testCoverage[i]),
-  //     geodesic: true,
-  //     strokeColor: "#000",
-  //     strokeOpacity: 1,
-  //     fillColor: "#000",
-  //     fillOpacity: 0.5,
-  //     strokeWeight: 2,
-  //   }).setMap(map);
-  // }
-
-  // console.log(borderCollection);
 }
 
 // ========================Actual "Is It Within Ze Polygon" Logic========================

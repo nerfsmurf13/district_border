@@ -69,11 +69,7 @@
     <script src="attendance.zones.js" defer></script>
     <script
       defer
-      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAnvwTCDQRQtmYsAie-EYGDoiWCRUh6Yxs&callback=initMap&libraries=places"
-    ></script>
-    <script
-      defer
-      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAnvwTCDQRQtmYsAie-EYGDoiWCRUh6Yxs&libraries=places&callback=initAutocomplete"
+      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAnvwTCDQRQtmYsAie-EYGDoiWCRUh6Yxs&libraries=places&callback=initialize"
     ></script>
 
     <!-- Google Tag Manager -->
@@ -932,7 +928,7 @@
                   <!-- THE GOODIES ARE HERE -->
                   <div class="row row-content dept-content">
                     <div class="row">
-                      <form onsubmit="getGeocoding();return false;" class="form form-inline">
+                      <form onsubmit="getGeocoding(); return false;" class="form form-inline">
                         <div class="col-xs-12 col-md-10 margin-bot-20">
                           <input
                             placeholder="Search Address"
@@ -946,9 +942,8 @@
                         <div class="col-xs-12 col-md-2">
                           <button
                             id="checkAddress"
-                            type="button"
+                            type="submit"
                             class="btn btn-primary"
-                            onclick="getGeocoding()"
                             style="border-radius: 4px; overflow: hidden; width: 100%"
                           >
                             Search
