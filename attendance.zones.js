@@ -27,72 +27,113 @@ function numToAlpha(x) {
   }
 }
 
+//Autocomplete
+let autocomplete;
+function initAutocomplete() {
+  //coppell
+  const southwest = { lat: 32.95521153131294, lng: -97.0215929504037 };
+  //melissa
+  const northeast = { lat: 33.28512731658927, lng: -96.57032498871392 };
+  const newBounds = new google.maps.LatLngBounds(southwest, northeast);
+
+  const autocomplete = new google.maps.places.Autocomplete(domAddressInput, {
+    bounds: newBounds,
+    componentRestrictions: { country: "us" },
+    fields: ["address_components", "geometry"],
+    strictBounds: true,
+    types: ["premise", "street_address"],
+  });
+
+  autocomplete.addListener("place_changed", onPlaceChanged);
+  function onPlaceChanged() {
+    let place = autocomplete.getPlace();
+    console.log(place);
+    console.log("Autocomplete Firing");
+    console.log(place.address_components[0]);
+    console.log(place.geometry.location.lat());
+    console.log(place.geometry.location.lng());
+  }
+}
+
 let listOfValidZones = [];
 async function getGeocoding() {
+  console.log("Fetching!");
   listOfValidZones = [];
   let query = encodeURI(domAddressInput.value);
-  // let data = null;
-  console.log("Fetching!");
   const result = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?address=${query}&key=${apiKey}`).then(
     (response) => (res = response.json())
   );
-  // console.log(result.results[0]);
-  // domAddress.value = result.results[0].formatted_address;
-  // let latlng = `${result.results[0].geometry.location.lat}, ${result.results[0].geometry.location.lng}`;
+  console.log("Google Response: ", result.results);
+  console.log("Google Response: ", result.results.length);
 
-  // console.log(latlng);
-  // domAddressInput.value = latlng;
+  // if (result.results.length > 0) {
+  //   console.log(
+  //     `Comparing User Address Number ${domAddressInput.value.trim()[0]} -vs- Google Address Number ${
+  //       result.results[0].address_components[0].long_name[0]
+  //     }`
+  //   );
+  // }
 
-  let colorIndex = 0; //works with "colorOptions"
-  function mapColor(x) {
-    if (borders[x].color) {
-      return borders[x].color;
+  if (domAddressInput.value.trim()[0] == result.results[0].address_components[0].long_name[0]) {
+    console.log("Its an address");
+
+    let colorIndex = 0; //works with "colorOptions"
+    function mapColor(x) {
+      if (borders[x].color) {
+        return borders[x].color;
+      }
+      let color = colorOptions[colorIndex];
+      colorIndex++;
+      return color;
     }
-    let color = colorOptions[colorIndex];
-    colorIndex++;
-    return color;
-  }
 
-  console.log(result.results);
+    // console.log("Border Entries: " + 0);
+    let insideDistrict;
+    let count = 0;
 
-  console.log("Border Entries: " + 0);
-  if (result.results.length > 0) {
-    for (let i = 0; i < borders.length; i++) {
-      const localBorders = borders[i].border;
-      for (specificBorder of localBorders) {
-        // console.log(specificBorder[0]);
-        let verdict = checkInside(specificBorder[0], [
-          result.results[0].geometry.location.lng,
-          result.results[0].geometry.location.lat,
-        ]);
-        if (verdict) {
-          let entry = {
-            name: borders[i].name,
-            grades: borders[i].grades,
-            type: borders[i].type,
-            address: borders[i].address,
-            location: borders[i].location,
-            color: colorOptions[i],
-            color: mapColor(i),
-            border: borders[i].border,
-          };
-          listOfValidZones.push(entry);
+    if (result.results.length > 0) {
+      for (let i = 0; i < borders.length; i++) {
+        const localBorders = borders[i].border;
+        for (specificBorder of localBorders) {
+          // console.log(specificBorder[0]);
+          insideDistrict = checkInside(specificBorder[0], [
+            result.results[0].geometry.location.lng,
+            result.results[0].geometry.location.lat,
+          ]);
+          if (insideDistrict) {
+            count++;
+            let entry = {
+              name: borders[i].name,
+              grades: borders[i].grades,
+              type: borders[i].type,
+              address: borders[i].address,
+              location: borders[i].location,
+              color: colorOptions[i],
+              color: mapColor(i),
+              border: borders[i].border,
+            };
+            listOfValidZones.push(entry);
+          }
         }
       }
+      initMap(result.results[0].geometry.location);
     }
-    initMap(result.results[0].geometry.location);
+
+    drawResults(result, count);
+  } else {
+    console.log("Its not an address");
+    drawResults(result, -1);
   }
-  drawResults(result);
 }
 
 function nestedArrayToObjects(x) {
-  console.log("nestedArrayToObjects: ", x);
+  // console.log("nestedArrayToObjects: ", x);
   newObj = [];
   for (i of x) {
     let temp = { lat: i[1], lng: i[0] };
     newObj.push(temp);
   }
-  console.log(`Processed polygon, ${x.length} edges.`);
+  // console.log(`Processed polygon, ${x.length} edges.`);
   return newObj;
 }
 
@@ -111,30 +152,16 @@ let testCoverage = checkCoverage("Elementary");
 // let testCoverage = checkCoverage("High School");
 
 //=========================Draw Results==============================
-function clearResults() {}
+// function clearResults() {}
 
 // drawResults(resultInput : Object | insideDistrictBoolean = : Boolean)
-function drawResults(resultInput, insideDistrictBoolean) {
+function drawResults(resultInput, insideDistrictCounter) {
   let result = resultInput;
   domResults.innerHTML = "";
   rawHtml = "";
-  if (result.results.length > 0) {
-    for (const [i, result] of listOfValidZones.entries()) {
-      rawHtml += `
-      <li>
-        <div style="display: flex; border-radius: 4px; overflow: hidden; border: ${result.color} 1px solid">
-          <div style="background-color: ${result.color}; width: 10px"></div>
-          <div>
-            <span style="margin-left: 1rem">${numToAlpha(i)}. </span> ${result.name} | Grades:
-            ${result.grades} | ${result.address}
-          </div>
-        </div>
-      </li>
-    `;
-      console.log(result);
-    }
-  } else if (result.results == 0) {
-    rawHtml = `
+
+  if (result.results == 0 || insideDistrictCounter == -1) {
+    rawHtml += `
       <li>
         <div style="display: flex; border-radius: 4px; overflow: hidden; border: #184366 1px solid">
           <div style="background-color: red; width: 10px"></div>
@@ -144,8 +171,41 @@ function drawResults(resultInput, insideDistrictBoolean) {
         </div>
       </li>
     `;
+    domResults.innerHTML = rawHtml;
+    return;
   }
-  domResults.innerHTML = rawHtml;
+  if (insideDistrictCounter == 0) {
+    rawHtml += `
+      <li>
+        <div style="display: flex; border-radius: 4px; overflow: hidden; border: red 1px solid">
+        <div style="background-color: red; width: 10px"></div>          <div>
+            <span style="padding-left: 5px;">'${domAddressInput.value}' is out of district !</span>
+          </div>
+        </div>
+      </li>
+    `;
+    domResults.innerHTML = rawHtml;
+    return;
+  }
+
+  if (result.results.length > 0) {
+    for (const [i, result] of listOfValidZones.entries()) {
+      rawHtml += `
+        <li>
+          <div style="display: flex; border-radius: 4px; overflow: hidden; border: ${result.color} 1px solid">
+            <div style="background-color: ${result.color}; width: 10px"></div>
+            <div>
+              <span style="margin-left: 1rem">${numToAlpha(i)}. </span> ${result.name} | Grades:
+              ${result.grades} | ${result.address}
+            </div>
+          </div>
+        </li>
+      `;
+      console.log(result);
+    }
+    domResults.innerHTML = rawHtml;
+    return;
+  }
 }
 
 //=========================Drawing on Maps==============================
@@ -173,18 +233,10 @@ function initMap(pos = { lat: 33.12443425433204, lng: -96.79647875401061 }) {
     // },
   };
 
-  //Autocomplete
-  const options = {
-    fields: ["formatted_address", "geometry", "name"],
-    strictBounds: false,
-    types: ["establishment"],
-  };
-  const autocomplete = new google.maps.places.SearchBox(domAddressInput, options);
-
   // The location of FISD Admin
   // The map, centered at FISD Admin by default
   const map = new google.maps.Map(document.getElementById("app-map"), {
-    zoom: 12,
+    zoom: 14,
     center: pos,
     mapTypeId: "roadmap",
   });
@@ -196,7 +248,7 @@ function initMap(pos = { lat: 33.12443425433204, lng: -96.79647875401061 }) {
     // icon: markerHome,
     icon: markerHome,
   });
-  autocomplete.bindTo("bounds", map);
+  // autocomplete.bindTo("bounds", map);
 
   // let borderCollection = [];
   // console.log(borders[13].border);
@@ -219,7 +271,7 @@ function initMap(pos = { lat: 33.12443425433204, lng: -96.79647875401061 }) {
     // borderCollection.push(nestedArrayToObjects(listOfValidZones[i].border));
 
     for (const iterator of listOfValidZones[i].border) {
-      console.log(iterator);
+      // console.log(iterator);
       new google.maps.Polygon({
         path: nestedArrayToObjects(iterator[0]),
         geodesic: true,
