@@ -20,10 +20,10 @@ def grabLoc(x):
 	return tempLoc
 
 
-f = open("HS_23_24_GRD_9_12_LayerToKML (2).JSON", "r")
+f = open("EL_23_24_GRADE_K_5_LayerToKM.JSON", "r")
 inputJson = json.loads(f.read())
-inputType = "High School"
-outFilename = 'geoHS.json'
+inputType = "Elementary"
+outFilename = 'geoES.json'
 
 outputJson=[]
 for x in inputJson['features']:
@@ -36,7 +36,7 @@ for x in inputJson['features']:
 	tempJson['url']=''
 	tempJson['color']=''
 	tempJson['address']=tempFetch['formatted_address']
-	tempJson['border']=x['geometry']['coordinates'][0][0]
+	tempJson['border']=x['geometry']['coordinates']
 	outputJson.append(tempJson)
 
 # Testing, without Fetching

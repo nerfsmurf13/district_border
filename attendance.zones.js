@@ -1,4 +1,4 @@
-//These colors make up the possible colors of the results which do not have a color specified (elementary schools)
+//These colors make up the possible colors of the results which do not have a color specified (i.e. elementary schools)
 const colorOptions = ["#184366", "#e8b20f", "#0e987d", "#e95b37", "#5ab3c4"];
 //API key for Google
 const apiKey = "AIzaSyBMobqGzdmYFvsxeZJ3YunRull6NYefekM";
@@ -11,7 +11,7 @@ const domResults = document.getElementById("dom-results");
 const originInput = document.getElementById("dom-address");
 const autocompleteArea = document.getElementById("autocomplete-area");
 
-// Convert 0-indexed numbers to alphabet. 0=>A , 25=>Z, 26=>AA, 55=>BD
+// Utility Function to Convert 0-indexed numbers to alphabet. 0=>A , 25=>Z, 26=>AA, 55=>BD
 function numToAlpha(x) {
   if (x < 0 || x > 701) {
     console.log("function numToAlpha(x)'s Input is too large. 0-701");
@@ -27,7 +27,6 @@ function numToAlpha(x) {
   }
 }
 
-// let searching = true;
 let listOfValidZones = [];
 async function getGeocoding() {
   listOfValidZones = [];
@@ -81,12 +80,9 @@ async function getGeocoding() {
         }
       }
     }
-    console.log("listOfValidZones: ", listOfValidZones);
     initMap(result.results[0].geometry.location);
   }
   drawResults(result);
-
-  // console.log(listOfValidZones);
 }
 
 function nestedArrayToObjects(x) {
@@ -104,18 +100,19 @@ function nestedArrayToObjects(x) {
 function checkCoverage(schoolTypeString) {
   let coverageArr = [];
   for (i of borders) {
-    // console.log(i);
     if (i.type == schoolTypeString) {
       coverageArr.push(i.border);
     }
   }
-  // console.log(coverageArr);
   return coverageArr;
 }
 let testCoverage = checkCoverage("Elementary");
+// let testCoverage = checkCoverage("Middle School");
+// let testCoverage = checkCoverage("High School");
 
 //=========================Draw Results==============================
 function clearResults() {}
+
 // drawResults(resultInput : Object | insideDistrictBoolean = : Boolean)
 function drawResults(resultInput, insideDistrictBoolean) {
   let result = resultInput;
@@ -123,11 +120,6 @@ function drawResults(resultInput, insideDistrictBoolean) {
   rawHtml = "";
   if (result.results.length > 0) {
     for (const [i, result] of listOfValidZones.entries()) {
-      // rawHtml += `<div>${result.name} | ${result.address}</div>`;
-      // if (result.location)
-      //   rawHtml += `<li class="rounded pl-2 bg-[${result.color}] flex outline outline-1 outline-black/25">
-      //   <span class="bg-white p-1 flex grow"><strong class="mx-1">${i}.</strong> ${result.name} | Grades: ${result.grades} | ${result.address}</span>
-      // </li>`;
       rawHtml += `
       <li>
         <div style="display: flex; border-radius: 4px; overflow: hidden; border: ${result.color} 1px solid">
@@ -140,10 +132,9 @@ function drawResults(resultInput, insideDistrictBoolean) {
       </li>
     `;
       console.log(result);
-      // console.log(test);
     }
   } else if (result.results == 0) {
-    rawHtml += `
+    rawHtml = `
       <li>
         <div style="display: flex; border-radius: 4px; overflow: hidden; border: #184366 1px solid">
           <div style="background-color: red; width: 10px"></div>
@@ -159,14 +150,6 @@ function drawResults(resultInput, insideDistrictBoolean) {
 
 //=========================Drawing on Maps==============================
 function initMap(pos = { lat: 33.12443425433204, lng: -96.79647875401061 }) {
-  // const adminBldg = { lat: 33.12443425433204, lng: -96.79647875401061 };
-
-  // if (pos) {
-  //   loc = pos;
-  // } else {
-  //   loc = adminBldg;
-  // }
-
   const markerHome = {
     path: "M32 5a21 21 0 0 0-21 21c0 17 21 33 21 33s21-16 21-33A21 21 0 0 0 32 5zm7 20v10h-5v-5a2 2 0 0 0-2-2 2 2 0 0 0-2 2v5h-5V25h-4l11-9 11 9z",
     fillColor: "#ed4733",
@@ -265,27 +248,8 @@ function initMap(pos = { lat: 33.12443425433204, lng: -96.79647875401061 }) {
     }
     // if (listOfValidZones[i].border.length)
   }
-  // let test = [
-  //   [-96.79797422283924, 33.09298362704685],
-  //   [-96.79861474707513, 33.09345664510581],
-  //   [-96.80039510462426, 33.09348257802917],
-  //   [-96.80040410984057, 33.09194227419761],
-  //   [-96.7968805965496, 33.09185442816792],
-  //   [-96.79687119596838, 33.09267969164591],
-  //   [-96.79788175069957, 33.09269347925507],
-  //   [-96.79797422283924, 33.09298362704685],
-  // ];
-  // new google.maps.Polygon({
-  //   path: nestedArrayToObjects(test),
-  //   geodesic: true,
-  //   strokeColor: "#000",
-  //   strokeOpacity: 1,
-  //   fillColor: "#000",
-  //   fillOpacity: 0.1,
-  //   strokeWeight: 2,
-  // }).setMap(map);
-  //Display Data on map for each valid zone/school
 
+  //Display Data on map for each valid zone/school
   // for (let i = 0; i < testCoverage.length; i++) {
   //   console.log(testCoverage);
   //   borderCollection.push(nestedArrayToObjects(testCoverage[i]));
@@ -305,7 +269,6 @@ function initMap(pos = { lat: 33.12443425433204, lng: -96.79647875401061 }) {
 }
 
 // ========================Actual "Is It Within Ze Polygon" Logic========================
-
 const onLine = (l1, p) => {
   if (
     p[0] <= Math.max(l1[0][0], l1[1][0]) &&
