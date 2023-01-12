@@ -6,7 +6,7 @@ function initialize() {
 //These colors make up the possible colors of the results which do not have a color specified (i.e. elementary schools)
 const colorOptions = ["#184366", "#e8b20f", "#0e987d", "#e95b37", "#5ab3c4"];
 //API key for Google
-const apiKey = "AIzaSyBMobqGzdmYFvsxeZJ3YunRull6NYefekM";
+// const apiKey = "AIzaSyBMobqGzdmYFvsxeZJ3YunRull6NYefekM";
 //DOM Elements
 const submitButton = document.getElementById("checkLoc");
 const domAddressInput = document.getElementById("dom-address-input");
@@ -35,7 +35,70 @@ function numToAlpha(x) {
 //Autocomplete
 let autocomplete;
 let selectedPlace = { location: {}, address: "" };
+let manualComplete = "";
+let selectedAutocompleteItem;
+
+let googleDOMNodes;
+
+// Check if any of them are visible (using ES6 here for conciseness)
+let googleDOMNodeIsVisible;
+
+function autoCompleteSelected() {
+  googleDOMNodes = document.getElementsByClassName("pac-container");
+  console.log("Something was selected");
+  manualComplete = `${document.querySelector(".pac-item-selected").childNodes[1].innerText}, ${
+    document.querySelector(".pac-item-selected").childNodes[2].innerText
+  }`;
+  console.log(manualComplete);
+}
+
+function autoCompleteDefaultSelect() {
+  googleDOMNodeIsVisible = Array.from(googleDOMNodes).some((node) => node.offsetParent !== null);
+  googleDOMNodes = document.getElementsByClassName("pac-container");
+  manualComplete = `${googleDOMNodes[0].childNodes[0].childNodes[1].innerText}, ${googleDOMNodes[0].childNodes[0].childNodes[2].innerText}`;
+  console.log("Nothing was selected");
+  // If one is visible - preventDefault
+  if (googleDOMNodeIsVisible) {
+    console.log("its visible...");
+    setTimeout(function () {
+      domAddressInput.value = manualComplete;
+    }, 1);
+    e.preventDefault();
+  }
+}
 function initAutocomplete() {
+  domAddressInput.addEventListener("keydown", (e) => {
+    selectedAutocompleteItem = document.getElementsByClassName("pac-item-selected");
+
+    // If it's Enter
+
+    if (e.key === "Enter") {
+      // Select all Google's dropdown DOM nodes (can be multiple)
+
+      // If Dropdown menu item selected via Keys
+      if (document.getElementsByClassName("pac-item-selected").length > 0) {
+        autoCompleteSelected();
+      }
+      // If no dropdown menu item selected with keys
+      else {
+        autoCompleteDefaultSelect();
+      }
+
+      // console.log(e);
+
+      // manualComplete = `${googleDOMNodes[0].childNodes[0].childNodes[1].innerText}, ${googleDOMNodes[0].childNodes[0].childNodes[2].innerText}`;
+      // console.log(manualComplete);
+      // // If one is visible - preventDefault
+      // if (googleDOMNodeIsVisible) {
+      //   console.log("its visible...");
+      //   setTimeout(function () {
+      //     domAddressInput.value = manualComplete;
+      //   }, 1);
+      //   e.preventDefault();
+      // }
+    }
+  });
+
   //coppell
   const southwest = { lat: 32.95521153131294, lng: -97.0215929504037 };
   //melissa
@@ -55,17 +118,26 @@ function initAutocomplete() {
   autocomplete.addListener("place_changed", async function (e) {
     let place = autocomplete.getPlace();
     // console.log(place);
-    // console.log("Autocomplete Firing");
+    console.log("Autocomplete Firing");
     // console.log(place.address_components[0]);
     // console.log(place.geometry.location.lat());
     // console.log(place.geometry.location.lng());
     if (!place.geometry) {
       console.log(place);
     } else {
-      selectedPlace["location"] = await { lat: place.geometry.location.lat(), lng: place.geometry.location.lng() };
+      buildPlace(place);
+      // selectedPlace["location"] = await { lat: place.geometry.location.lat(), lng: place.geometry.location.lng() };
       // console.log(selectedPlace);
     }
   });
+}
+
+async function buildPlace(placeInput) {
+  console.log("buildPlace is running");
+  selectedPlace["location"] = await {
+    lat: placeInput.geometry.location.lat(),
+    lng: placeInput.geometry.location.lng(),
+  };
 }
 
 let listOfValidZones = [];
@@ -92,7 +164,6 @@ function getGeocoding() {
     return color;
   }
 
-  // console.log("Border Entries: " + 0);
   let insideDistrict;
   let count = 0;
 
@@ -151,55 +222,56 @@ function checkCoverage(schoolTypeString) {
 function drawResults(resultInput, insideDistrictCounter) {
   // let result = resultInput;
   console.log(resultInput);
+  console.log(insideDistrictCounter);
   domResults.innerHTML = "";
   rawHtml = "";
 
-  // if (result.results == 0 || insideDistrictCounter == -1) {
-  //   rawHtml += `
-  //     <li>
-  //       <div style="display: flex; border-radius: 4px; overflow: hidden; border: #184366 1px solid">
-  //         <div style="background-color: red; width: 10px"></div>
-  //         <div>
-  //           <span style="padding-left: 5px;"> No results found for '${domAddressInput.value}'!</span>
-  //         </div>
-  //       </div>
-  //     </li>
-  //   `;
-  //   domResults.innerHTML = rawHtml;
-  //   return;
-  // }
-  // if (insideDistrictCounter == 0) {
-  //   rawHtml += `
-  //     <li>
-  //       <div style="display: flex; border-radius: 4px; overflow: hidden; border: red 1px solid">
-  //       <div style="background-color: red; width: 10px"></div>          <div>
-  //           <span style="padding-left: 5px;">'${domAddressInput.value}' is out of district !</span>
-  //         </div>
-  //       </div>
-  //     </li>
-  //   `;
-  //   domResults.innerHTML = rawHtml;
-  //   return;
-  // }
+  if (insideDistrictCounter == -1) {
+    rawHtml += `
+      <li>
+        <div style="display: flex; border-radius: 4px; overflow: hidden; border: #184366 1px solid">
+          <div style="background-color: red; width: 10px"></div>
+          <div>
+            <span style="padding-left: 5px;"> No results found for '${domAddressInput.value}'!</span>
+          </div>
+        </div>
+      </li>
+    `;
+    domResults.innerHTML = rawHtml;
+    return;
+  }
+  if (insideDistrictCounter == 0) {
+    rawHtml += `
+      <li>
+        <div style="display: flex; border-radius: 4px; overflow: hidden; border: red 1px solid">
+        <div style="background-color: red; width: 10px"></div>          <div>
+            <span style="padding-left: 5px;">'${domAddressInput.value}' is out of district !</span>
+          </div>
+        </div>
+      </li>
+    `;
+    domResults.innerHTML = rawHtml;
+    return;
+  }
 
-  // if (result.results.length > 0) {
-  //   for (const [i, result] of listOfValidZones.entries()) {
-  //     rawHtml += `
-  //       <li>
-  //         <div style="display: flex; border-radius: 4px; overflow: hidden; border: ${result.color} 1px solid">
-  //           <div style="background-color: ${result.color}; width: 10px"></div>
-  //           <div>
-  //             <span style="margin-left: 1rem">${numToAlpha(i)}. </span> ${result.name} | Grades:
-  //             ${result.grades} | ${result.address}
-  //           </div>
-  //         </div>
-  //       </li>
-  //     `;
-  //     console.log(result);
-  //   }
-  //   domResults.innerHTML = rawHtml;
-  //   return;
-  // }
+  if (insideDistrictCounter > 0) {
+    for (const [i, result] of listOfValidZones.entries()) {
+      rawHtml += `
+        <li>
+          <div style="display: flex; border-radius: 4px; overflow: hidden; border: ${result.color} 1px solid">
+            <div style="background-color: ${result.color}; width: 10px"></div>
+            <div>
+              <span style="margin-left: 1rem">${numToAlpha(i)}. </span> ${result.name} | Grades:
+              ${result.grades} | ${result.address}
+            </div>
+          </div>
+        </li>
+      `;
+      console.log(result);
+    }
+    domResults.innerHTML = rawHtml;
+    return;
+  }
 }
 
 //=========================Drawing on Maps==============================
@@ -333,6 +405,7 @@ const isIntersect = (l1, l2) => {
 };
 
 const checkInside = (poly, p) => {
+  // console.log("checkInside: ", poly, p);
   // When polygon has less than 3 edge, it is not polygon
   let n = poly.length;
   if (n < 3) return false;
