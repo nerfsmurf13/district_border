@@ -928,8 +928,8 @@
                   <!-- THE GOODIES ARE HERE -->
                   <div class="row row-content dept-content">
                     <div class="row">
-                      <form onsubmit="getGeocoding(); return false;" class="form form-inline">
-                        <div class="col-xs-12 col-md-10 margin-bot-20">
+                      <form onsubmit="checkZones();return false;" class="form form-inline">
+                        <div class="col-xs-12 col-md-10 margin-bot-20" style="position: relative">
                           <input
                             placeholder="Search Address"
                             type="text"
@@ -938,12 +938,15 @@
                             id="dom-address-input"
                             style="width: 100%"
                           />
+
+                          <ul id="dom-autocomplete" style="position: absolute; background-color: white"></ul>
                         </div>
                         <div class="col-xs-12 col-md-2">
                           <button
-                            id="checkAddress"
-                            type="submit"
+                            id="check-address"
+                            type="button"
                             class="btn btn-primary"
+                            onclick="checkZones()"
                             style="border-radius: 4px; overflow: hidden; width: 100%"
                           >
                             Search
