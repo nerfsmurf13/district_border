@@ -1,113 +1,207 @@
-//These colors make up the possible colors of the results which do not have a color specified (i.e. elementary schools)
-const colorOptions = ["#184366", "#e8b20f", "#0e987d", "#e95b37", "#5ab3c4"];
+function initialize() {
+  // initMap();
+  // initAutocomplete();
+}
+
 //DOM Elements
 const domAddressInput = document.getElementById("dom-address-input");
+const domAutocomplete = document.getElementById("dom-autocomplete");
 const domResults = document.getElementById("dom-results");
-
-//Global varible that stores school data that contains users address
 let listOfValidZones = [];
 
-let districtMap;
+let addressPoints;
+let autocompleteSelectedIndex = 0;
+let results = [];
+let origin = [];
+let address;
 
-// Utility Function to Convert 0-indexed numbers to alphabet. 0=>A , 25=>Z, 26=>AA, 55=>BD
-function numToAlpha(x) {
-  const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-  const divide = 26;
-  if (x < 0 || x > 701) {
-    console.log("function numToAlpha(x)'s Input is too large. 0-701");
-    return "Bad Input";
-  }
-  if (x < divide) {
-    return alphabet[x];
-  } else {
-    return `${alphabet[Math.floor(x / divide) - 1]}${alphabet[(digit = x % divide)]}`.trim();
-  }
-}
+fetch("./addressPoints.json")
+  .then((response) => response.text())
+  .then((data) => {
+    addressPoints = JSON.parse(data);
+  });
 
-async function getGeocoding() {
-  let count = 0;
-  listOfValidZones = [];
-  let query = encodeURI(domAddressInput.value);
-  // let data = null;
-  console.log("Fetching!");
-  const result = await fetch(
-    `https://maps.googleapis.com/maps/api/geocode/json?address=${query}&key=AIzaSyBMobqGzdmYFvsxeZJ3YunRull6NYefekM`
-  ).then((response) => (res = response.json()));
+domAddressInput.addEventListener("input", () => {
+  autocompleteSelectedIndex = 0;
+  drawAutocomplete();
+});
 
-  let colorIndex = 0; //works with "colorOptions"
-  function mapColor(x) {
-    if (borders[x].color) {
-      return borders[x].color;
-    }
-    let color = colorOptions[colorIndex];
-    colorIndex++;
-    return color;
-  }
-
-  if (result.results.length > 0) {
-    for (let i = 0; i < borders.length; i++) {
-      const localBorders = borders[i].border;
-      for (specificBorder of localBorders) {
-        // console.log(specificBorder[0]);
-        let verdict = checkInside(specificBorder[0], [
-          result.results[0].geometry.location.lng,
-          result.results[0].geometry.location.lat,
-        ]);
-        if (verdict) {
-          count++;
-          let entry = {
-            name: borders[i].name,
-            grades: borders[i].grades,
-            type: borders[i].type,
-            address: borders[i].address,
-            location: borders[i].location,
-            color: colorOptions[i],
-            color: mapColor(i),
-            border: borders[i].border,
-          };
-          listOfValidZones.push(entry);
-        }
+document.addEventListener("keydown", (e) => {
+  if (domAutocomplete.getElementsByTagName("li").length != 0) {
+    if (e.key == "ArrowDown") {
+      console.log("down pressed");
+      console.log(domAutocomplete.getElementsByTagName("li").length);
+      autocompleteSelectedIndex++;
+      if (autocompleteSelectedIndex > domAutocomplete.getElementsByTagName("li").length - 1) {
+        autocompleteSelectedIndex = 0;
       }
     }
-    // initMap(result.results[0].geometry.location);
-    districtMap.setCenter(result.results[0].geometry.location);
+    if (e.key == "ArrowUp") {
+      console.log("up pressed");
+      autocompleteSelectedIndex--;
+      if (autocompleteSelectedIndex < 0) {
+        autocompleteSelectedIndex = domAutocomplete.getElementsByTagName("li").length - 1;
+      }
+    }
+    // if (e.key == "Enter") {
+    //   console.log("Enter Event - Autocomplete results Found");
+    //   startSearch(autocompleteSelectedIndex);
+    // }
+  } else {
+    // if (e.key == "Enter") {
+    //   console.log("Enter Event - no autocomplete results");
+    //   startSearch();
+    // }
   }
-  drawResults(result, count);
-}
+  drawAutocomplete();
+});
 
-function nestedArrayToObjects(x) {
-  console.log("nestedArrayToObjects: ", x);
-  newObj = [];
-  for (i of x) {
-    let temp = { lat: i[1], lng: i[0] };
-    newObj.push(temp);
+document.addEventListener("click", () => {
+  hideAutocomplete();
+});
+function showAutocomplete() {
+  if (domAutocomplete.classList.contains("hidden")) {
+    domAutocomplete.classList.remove("hidden");
   }
-  console.log(`Processed polygon, ${x.length} edges.`);
-  return newObj;
 }
+function hideAutocomplete() {
+  if (!domAutocomplete.classList.contains("hidden")) {
+    domAutocomplete.classList.add("hidden");
+  }
+}
+function drawAutocomplete() {
+  showAutocomplete();
+  domAutocomplete.innerHTML = "";
+  if (domAddressInput.value.length >= 3) {
+    results = addressPoints.filter((el) => el.address.toLowerCase().includes(domAddressInput.value.toLowerCase()));
+    domAutocomplete.innerHTML = results
+      .slice(0, 10)
+      .map((x, index) => {
+        if (index === autocompleteSelectedIndex) {
+          return /*html*/ `<li value=${index} style="margin: 0 15px;"><strong> ${x.address}, ${x.city}, ${x.zip} </strong></li>`;
+        } else {
+          return /*html*/ `<li value=${index} style="margin: 0 15px;">${x.address}, ${x.city}, ${x.zip}</li>`;
+        }
+      })
+      .join("");
 
-//=========================Test Function for checking Coverage on map==============================
-function checkCoverage(schoolTypeString) {
-  let coverageArr = [];
-  for (i of borders) {
-    if (i.type == schoolTypeString) {
-      coverageArr.push(i.border);
+    // console.log(domAutocomplete.getElementsByTagName("li"));
+    for (let i = 0; i < domAutocomplete.getElementsByTagName("li").length; i++) {
+      domAutocomplete.getElementsByTagName("li")[i].addEventListener("mousedown", (e) => {
+        autocompleteSelectedIndex = e.target.value;
+        setOrigin(i);
+      });
     }
   }
-  return coverageArr;
 }
-let testCoverage = checkCoverage("Elementary");
-// let testCoverage = checkCoverage("Middle School");
-// let testCoverage = checkCoverage("High School");
+
+//i = autocompleteselectedindex
+function setOrigin() {
+  if (results.length > 0 && domAddressInput.value.length >= 3) {
+    origin = results[autocompleteSelectedIndex];
+    console.log(origin);
+    checkZones(origin.long, origin.lat);
+    //Comment out below to remove autofill
+    domAddressInput.value = `${origin.address}`;
+  } else {
+    if (domAddressInput.value.length >= 3) {
+      console.log("no origin, going to geocode");
+      googleGeocode();
+      // checkZones(origin.long, origin.lat);
+    }
+  }
+}
+
+async function googleGeocode() {
+  console.log("Google Coords");
+  let query = encodeURI(domAddressInput.value + " texas");
+  const googleResult = await fetch(
+    `https://maps.googleapis.com/maps/api/geocode/json?address=${query}&key=AIzaSyBMobqGzdmYFvsxeZJ3YunRull6NYefekM`
+  ).then((response) => (res = response.json()));
+  console.log(googleResult);
+  if (googleResult.status == "OK") {
+    origin.address = googleResult.results[0].formatted_address;
+    if (googleResult.results) {
+      console.log("google results found");
+      checkZones(googleResult.results[0].geometry.location.lng, googleResult.results[0].geometry.location.lat);
+    } else {
+      console.log("nothing found");
+    }
+  }
+}
+
+//Global varible that stores school data that contains users address
+function checkZones(inputLng, inputLat) {
+  console.log("checkZones Fired!");
+  listOfValidZones = [];
+  let insideDistrict;
+  let count = 0;
+
+  for (let i = 0; i < borders.length; i++) {
+    const localBorders = borders[i].border;
+    for (specificBorder of localBorders) {
+      // console.log(specificBorder[0]);
+      insideDistrict = checkInside(specificBorder[0], [inputLng, inputLat]);
+      if (insideDistrict) {
+        count++;
+        let entry = {
+          name: borders[i].name,
+          grades: borders[i].grades,
+          type: borders[i].type,
+          address: borders[i].address,
+          location: borders[i].location,
+          color: colorfy(i),
+          border: borders[i].border,
+        };
+        listOfValidZones.push(entry);
+      }
+    }
+  }
+  console.log(listOfValidZones);
+  drawResults(count);
+  return listOfValidZones;
+}
+
+function startSearch() {
+  origin = {};
+  console.log("SEARCHING");
+  domResults.innerHTML = "";
+  hideAutocomplete();
+  setOrigin();
+}
 
 //=========================Draw Results==============================
-function clearResults() {}
+// function clearResults() {}
 
 // drawResults(resultInput : Object | insideDistrictBoolean = : Boolean)
-function drawResults(resultInput, insideDistrictCounter) {
-  let result = resultInput;
+function drawResults(insideDistrictCounter) {
+  console.log("drawResults Function");
   domResults.innerHTML = "";
+
   rawHtml = "";
+
+  if (origin) {
+    rawHtml = `<li>
+    <span style="padding-left: 5px;"> Results for ${origin.address}</span>
+  </li>`;
+  }
+
+  if (domAddressInput.value.length < 3) {
+    console.log("search short");
+    rawHtml += `
+      <li>
+        <div style="display: flex; border-radius: 4px; overflow: hidden; border: #184366 1px solid">
+          <div style="background-color: red; width: 10px"></div>
+          <div>
+            <span style="padding-left: 5px;"> Sorry, '${domAddressInput.value}' is too short of a request!</span>
+          </div>
+        </div>
+      </li>
+    `;
+    domResults.innerHTML = rawHtml;
+    return;
+  }
+
   if (insideDistrictCounter == -1) {
     rawHtml += `
       <li>
@@ -127,7 +221,7 @@ function drawResults(resultInput, insideDistrictCounter) {
       <li>
         <div style="display: flex; border-radius: 4px; overflow: hidden; border: red 1px solid">
         <div style="background-color: red; width: 10px"></div>          <div>
-            <span style="padding-left: 5px;">'${domAddressInput.value}' is out of district !</span>
+            <span style="padding-left: 5px;">'${origin.address}' is out of district !</span>
           </div>
         </div>
       </li>
@@ -140,8 +234,8 @@ function drawResults(resultInput, insideDistrictCounter) {
     for (const [i, result] of listOfValidZones.entries()) {
       rawHtml += `
         <li>
-          <div style="display: flex; border-radius: 4px; overflow: hidden; border: ${result.color} 1px solid">
-            <div style="background-color: ${result.color}; width: 10px"></div>
+          <div style="display: flex; border-radius: 4px; overflow: hidden; border: ${colorfy(i)} 1px solid">
+            <div style="background-color: ${colorfy(i)}; width: 10px"></div>
             <div>
               <span style="margin-left: 1rem">${numToAlpha(i)}. </span> ${result.name} | Grades:
               ${result.grades} | ${result.address}
@@ -156,112 +250,30 @@ function drawResults(resultInput, insideDistrictCounter) {
   }
 }
 
-//=========================Drawing on Maps==============================
-function initMap(pos = { lat: 33.12443425433204, lng: -96.79647875401061 }) {
-  console.log("initMap Ran");
-  const markerHome = {
-    path: "M32 5a21 21 0 0 0-21 21c0 17 21 33 21 33s21-16 21-33A21 21 0 0 0 32 5zm7 20v10h-5v-5a2 2 0 0 0-2-2 2 2 0 0 0-2 2v5h-5V25h-4l11-9 11 9z",
-    fillColor: "#ed4733",
-    strokeColor: "#c82f25",
-    fillOpacity: 1,
-    strokeWeight: 0.5,
-    rotation: 0,
-    scale: 0.75,
-    anchor: new google.maps.Point(30, 60),
-  };
+// for (const item of addressPoints[0]) {
+//   console.log(item);
+// }
 
-  const icons = {
-    // origin: {
-    //   icon: iconBase + "parking_lot_maps.png",
-    // },
-    // library: {
-    //   icon: iconBase + "library_maps.png",
-    // },
-    // info: {
-    //   icon: iconBase + "info-i_maps.png",
-    // },
-  };
+//These colors make up the possible colors of the results which do not have a color specified (i.e. elementary schools)
+function colorfy(x) {
+  const colorOptions = ["#184366", "#e8b20f", "#0e987d", "#e95b37", "#5ab3c4"];
+  return `${colorOptions[(digit = x % colorOptions.length)]}`.trim();
+}
 
-  //Autocomplete
+let districtMap;
 
-  //coppell
-  const southwest = { lat: 32.95521153131294, lng: -97.0215929504037 };
-  //melissa
-  const northeast = { lat: 33.28512731658927, lng: -96.57032498871392 };
-  const newBounds = new google.maps.LatLngBounds(southwest, northeast);
-
-  const autocomplete = new google.maps.places.Autocomplete(domAddressInput, {
-    bounds: newBounds,
-    componentRestrictions: { country: "us" },
-    fields: ["address_components", "geometry.location"],
-    strictBounds: true,
-    types: ["premise", "street_address"],
-  });
-
-  // The location of FISD Admin
-  // The map, centered at FISD Admin by default
-  districtMap = new google.maps.Map(document.getElementById("app-map"), {
-    zoom: 12,
-    center: pos,
-    mapTypeId: "roadmap",
-  });
-
-  // The marker, positioned at FISD Admin
-  const marker = new google.maps.Marker({
-    position: pos,
-    map: districtMap,
-    // icon: markerHome,
-    icon: markerHome,
-  });
-
-  // let borderCollection = [];
-  // console.log(borders[13].border);
-  //Display Data on map for each valid zone/school
-  for (let i = 0; i < listOfValidZones.length; i++) {
-    const contentString = /*html*/ `
-    <div>
-      <h3>${listOfValidZones[i].name}</h3>
-      <ul>
-        <li>${listOfValidZones[i].grades}</li>
-      </ul>
-    </div>
-    `;
-
-    const infowindow = new google.maps.InfoWindow({
-      content: contentString,
-      ariaLabel: listOfValidZones[i].name,
-    });
-
-    // borderCollection.push(nestedArrayToObjects(listOfValidZones[i].border));
-
-    for (const iterator of listOfValidZones[i].border) {
-      console.log(iterator);
-      new google.maps.Polygon({
-        path: nestedArrayToObjects(iterator[0]),
-        geodesic: true,
-        strokeColor: listOfValidZones[i].color,
-        strokeOpacity: 1,
-        fillColor: listOfValidZones[i].color,
-        fillOpacity: 0.1,
-        strokeWeight: 2,
-      }).setMap(districtMap);
-
-      let mark = new google.maps.Marker({
-        position: listOfValidZones[i].location,
-        map: districtMap,
-        label: `${numToAlpha(i)}`,
-        title: listOfValidZones[i].name,
-        sclae: 0.75,
-      });
-
-      mark.addListener("click", () => {
-        // console.log(e);
-        infowindow.open({
-          anchor: mark,
-          map: districtMap,
-        });
-      });
-    }
+// Utility Function to Convert 0-indexed numbers to alphabet. 0=>A , 25=>Z, 26=>AA, 55=>BD
+function numToAlpha(x) {
+  const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  const divide = 26;
+  if (x < 0 || x > 701) {
+    console.log("function numToAlpha(x)'s Input is too large. 0-701");
+    return "Bad Input";
+  }
+  if (x < divide) {
+    return alphabet[x];
+  } else {
+    return `${alphabet[Math.floor(x / divide) - 1]}${alphabet[(digit = x % divide)]}`.trim();
   }
 }
 
