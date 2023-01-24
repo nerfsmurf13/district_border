@@ -2,42 +2,52 @@
 from urllib.request import urlopen
 import urllib.parse
 import json
-API_KEY='AIzaSyBMobqGzdmYFvsxeZJ3YunRull6NYefekM'
+# API_KEY='AIzaSyBMobqGzdmYFvsxeZJ3YunRull6NYefekM'
 
 
-def grabLoc(x):
-	QUERY=urllib.parse.quote_plus(x)
-	with urlopen(f'https://maps.googleapis.com/maps/api/geocode/json?address={QUERY}+Frisco+TX&key={API_KEY}') as response:
-		body = response.read()
+# def grabLoc(x):
+# 	QUERY=urllib.parse.quote_plus(x)
+# 	with urlopen(f'https://maps.googleapis.com/maps/api/geocode/json?address={QUERY}+Frisco+TX&key={API_KEY}') as response:
+# 		body = response.read()
 
-	tempLoc = {}
-	responseCoords = json.loads(body)
-	tempLoc['formatted_address']=responseCoords['results'][0]['formatted_address']
-	tempLoc['location']=responseCoords['results'][0]['geometry']['location']
+# 	tempLoc = {}
+# 	responseCoords = json.loads(body)
+# 	tempLoc['formatted_address']=responseCoords['results'][0]['formatted_address']
+# 	tempLoc['location']=responseCoords['results'][0]['geometry']['location']
 
-	print(responseCoords['results'][0]['geometry']['location'])
-	print(responseCoords['results'][0]['formatted_address'])
-	return tempLoc
+# 	print(responseCoords['results'][0]['geometry']['location'])
+# 	print(responseCoords['results'][0]['formatted_address'])
+# 	return tempLoc
 
 
-f = open("EL_23_24_GRADE_K_5_LayerToKM.JSON", "r")
+f = open("border.JSON", "r")
 inputJson = json.loads(f.read())
-inputType = "Elementary"
-outFilename = 'geoES.json'
+# inputType = "Elementary"
+outFilename = 'urled.json'
 
 outputJson=[]
-for x in inputJson['features']:
-	tempFetch = grabLoc(f"{x['properties']['Name']} {inputType}")
-	tempJson={}
-	tempJson['name']=f"{x['properties']['Name']} {inputType}"
-	tempJson['type']=inputType
-	tempJson['grades']=x['properties']['Grades']
-	tempJson['location']=tempFetch['location']
-	tempJson['url']=''
-	tempJson['color']=''
-	tempJson['address']=tempFetch['formatted_address']
-	tempJson['border']=x['geometry']['coordinates']
-	outputJson.append(tempJson)
+count=0
+for x in inputJson:
+# for x in inputJson['features']:
+	print(count)
+
+	name = x['name'].split(' ')[0]
+	print(name)
+	count=count+1
+
+	# print(count)
+	# print(f'https://schools.friscoisd.org/{name}')
+	# tempFetch = grabLoc(f"{x['properties']['Name']} {inputType}")
+	# tempJson={}
+	# tempJson['name']=f"{x['properties']['Name']} {inputType}"
+	# tempJson['type']=inputType
+	# tempJson['grades']=x['properties']['Grades']
+	# tempJson['location']=tempFetch['location']
+	# tempJson['url']=''
+	# tempJson['color']=''
+	# tempJson['address']=tempFetch['formatted_address']
+	# tempJson['border']=x['geometry']['coordinates']
+	# outputJson.append(tempJson)
 
 # Testing, without Fetching
 # for x in inputJson['features']:
@@ -65,6 +75,6 @@ for x in inputJson['features']:
 #   # print(borderPointer)
 
 # print(outputJson)
-outputStr=json.dumps(outputJson)
-with open(outFilename, "w") as outfile:
-	outfile.write(outputStr)
+# outputStr=json.dumps(outputJson)
+# with open(outFilename, "w") as outfile:
+# 	outfile.write(outputStr)

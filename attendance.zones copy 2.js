@@ -1,5 +1,5 @@
 function initialize() {
-  initMap();
+  // initMap();
   // initAutocomplete();
 }
 
@@ -10,40 +10,38 @@ const domResults = document.getElementById("dom-results");
 const domGoogleResultsSection = document.getElementById("dom-google-results-section");
 const domGoogleResults = document.getElementById("dom-google-results");
 
-//Array for zones that contain the Origin Coordinates
 let listOfValidZones = [];
 
 let addressPoints;
 let autocompleteOpen = false;
 let autocompleteSelectedIndex = 0;
-let autocompleteResults = [];
+let results = [];
 let googleResults = [];
-let origin = { a: "", c: "", y: "", x: "", z: "" };
+let origin = [];
 let address;
 
-//Fetch JSON
-fetch("./addressPointsMinified.json")
+fetch("./addressPoints.json")
   .then((response) => response.text())
   .then((data) => {
     addressPoints = JSON.parse(data);
   });
 
-//Address Field Event Listener
 domAddressInput.addEventListener("input", (e) => {
-  if (e.key != "Escape" || e.key != "Enter") {
+  if (e.key != "Escape") {
     console.log("input changed");
-    console.log(autocompleteOpen);
     autocompleteSelectedIndex = 0;
-
-    drawAutocomplete();
+    setTimeout(() => {
+      drawAutocomplete();
+    }, 300);
   }
 });
 
-//Controls Autocomplete Navigation w/ arrows
 document.addEventListener("keydown", (e) => {
   console.log(e.key);
   if (domAutocomplete.getElementsByTagName("li").length != 0) {
     if (e.key == "ArrowDown") {
+      console.log("down pressed");
+      console.log(domAutocomplete.getElementsByTagName("li").length);
       autocompleteSelectedIndex++;
       if (autocompleteSelectedIndex > domAutocomplete.getElementsByTagName("li").length - 1) {
         autocompleteSelectedIndex = 0;
@@ -51,6 +49,7 @@ document.addEventListener("keydown", (e) => {
       drawAutocomplete();
     }
     if (e.key == "ArrowUp") {
+      console.log("up pressed");
       autocompleteSelectedIndex--;
       if (autocompleteSelectedIndex < 0) {
         autocompleteSelectedIndex = domAutocomplete.getElementsByTagName("li").length - 1;
@@ -60,23 +59,22 @@ document.addEventListener("keydown", (e) => {
   }
 });
 
-//Click event listener for closing autocomplete
 document.addEventListener("click", () => {
   console.log("click");
+
   hideAutocomplete();
 });
-
-//Escape listener for closing autocomplete
 document.addEventListener("keydown", (e) => {
   if (e.key == "Escape") {
     console.log("esc");
+
     hideAutocomplete();
   }
 });
 
-//Autocomplete visibility
 function showAutocomplete() {
   console.log("showac");
+
   if (domAutocomplete.classList.contains("hidden")) {
     domAutocomplete.classList.remove("hidden");
     autocompleteOpen = true;
@@ -84,95 +82,80 @@ function showAutocomplete() {
 }
 function hideAutocomplete() {
   console.log("hideac");
+
   if (!domAutocomplete.classList.contains("hidden")) {
     domAutocomplete.classList.add("hidden");
     autocompleteOpen = false;
   }
 }
-
-//Google Results visibility
 function showGoogleResults() {
   console.log("showgr");
+
   if (domGoogleResultsSection.classList.contains("hidden")) {
     domGoogleResultsSection.classList.remove("hidden");
   }
 }
 function hideGoogleResults() {
   console.log("hidegr");
+
   if (!domGoogleResultsSection.classList.contains("hidden")) {
     domGoogleResultsSection.classList.add("hidden");
   }
 }
-
-//Autocomplete Building/Drawing
 function drawAutocomplete() {
+  console.log("drawAC");
+
+  domAutocomplete.innerHTML = "";
   if (domAddressInput.value.length >= 3) {
-    console.log("drawAC");
-
-    domAutocomplete.innerHTML = "";
-
-    autocompleteResults = addressPoints.filter((el) =>
-      el.a.toLowerCase().includes(domAddressInput.value.toLowerCase())
-    );
-
-    domAutocomplete.innerHTML = autocompleteResults
+    results = addressPoints.filter((el) => el.address.toLowerCase().includes(domAddressInput.value.toLowerCase()));
+    domAutocomplete.innerHTML = results
       .slice(0, 10)
       .map((x, index) => {
-        if (index == autocompleteSelectedIndex) {
-          //Highlighted Item HTML
-          return /*html*/ `<li value=${index} style="padding: 0 15px; background-color:#184366;color:white;">${
-            x.a
-          }, ${cityFullName(x.c)}</li>`;
+        if (index === autocompleteSelectedIndex) {
+          return /*html*/ `<li value=${index} style="padding: 0 15px;"><strong> ${x.address}, ${x.city}, ${x.zip} </strong></li>`;
         } else {
-          //Item HTML
-          return /*html*/ `<li value=${index} style="padding: 0 15px;">${x.a}, ${cityFullName(x.c)}</li>`;
+          return /*html*/ `<li value=${index} style="padding: 0 15px;">${x.address}, ${x.city}, ${x.zip}</li>`;
         }
       })
       .join("");
 
-    //add click listeners to these autocomplete items
+    // console.log(domAutocomplete.getElementsByTagName("li"));
     for (let i = 0; i < domAutocomplete.getElementsByTagName("li").length; i++) {
       domAutocomplete.getElementsByTagName("li")[i].addEventListener("mousedown", (e) => {
-        e.stopPropagation();
         autocompleteSelectedIndex = e.target.value;
-        setOrigin();
+        setOrigin(i);
       });
     }
-    if (autocompleteResults.length == 0) {
-      hideAutocomplete();
-    } else {
-      showAutocomplete();
-    }
-    console.log(autocompleteResults);
   }
+  showAutocomplete();
 }
 
-//the origin object is referenced by the "checkZones" function.
-//This function builds the origin object
-//if the address is found from JSON (if in autocomplete), load the coords from that
-//if not, call out to google API to get a list of results.
-//Once one of those results are clicked, load that info into the origin object.
-//Might bypass this function and go straight to checkZones...
+//i = autocompleteselectedindex
 function setOrigin() {
   console.log("setOrigin");
-  console.log(autocompleteOpen);
-  //if autocomplete has reesults and address field has 3>= chars and autocomplete window open
   if (autocompleteOpen) {
-    origin = autocompleteResults[autocompleteSelectedIndex];
-
-    console.log(origin);
-    checkZones(origin.x, origin.y);
-    initMap((pos = { lat: origin.y, lng: origin.x }));
-    //Comment out below to remove autofill
-    domAddressInput.value = `${origin.a}`;
+    if (results.length > 0 && domAddressInput.value.length >= 3) {
+      origin = results[autocompleteSelectedIndex];
+      console.log(origin);
+      checkZones(origin.long, origin.lat);
+      //Comment out below to remove autofill
+      domAddressInput.value = `${origin.address}`;
+    } else {
+      if (domAddressInput.value.length >= 3) {
+        console.log("no origin, going to geocode");
+        googleGeocode();
+        // checkZones(origin.long, origin.lat);
+      }
+    }
   } else {
-    origin = { a: "", c: "", y: "", x: "", z: "" };
-    console.log("no origin, going to geocode");
-    googleGeocode();
+    if (domAddressInput.value.length >= 3) {
+      console.log("no origin, going to geocode");
+      googleGeocode();
+      // checkZones(origin.long, origin.lat);
+    }
   }
 }
 
-//This function queries google for addresses
 async function googleGeocode() {
   console.log("GoogleGeocode");
   googleResults = [];
@@ -181,54 +164,49 @@ async function googleGeocode() {
   let bounds1 = "32.97326554735735, -97.00557582118661";
   let bounds2 = "33.27755317807131, -96.57877088052682";
   let bounds = encodeURI(`${bounds1}|${bounds2}`);
-  await fetch(
-    `https://maps.googleapis.com/maps/api/geocode/json?address=${query}&bounds=${bounds}&key=AIzaSyBMobqGzdmYFvsxeZJ3YunRull6NYefekM`
+  // console.log(
+  //   `https://maps.googleapis.com/maps/api/geocode/json?address=${query}&result_type=street_address&bounds=${bounds}&key=AIzaSyBMobqGzdmYFvsxeZJ3YunRull6NYefekM`
+  // );
+  const googleResult = await fetch(
+    `https://maps.googleapis.com/maps/api/geocode/json?address=${query}&location_type=ROOFTOP&bounds=${bounds}&key=AIzaSyBMobqGzdmYFvsxeZJ3YunRull6NYefekM`
   )
     .then((response) => (res = response.json()))
     .then((res) => {
       console.log(res);
       if (res.results.length > 0) {
-        for (x of res.results) {
-          console.log(x);
-          if (x.types.some((r) => ["premise", "street_address", "subpremise", "plus_code"].indexOf(r) >= 0)) {
-            googleResults.push(x);
-          }
-        }
-        console.log(googleResults);
-        if (googleResults.length > 0) {
-          domGoogleResults.innerHTML = googleResults
-            .slice(0, 10)
-            .map((x, index) => {
-              return /*html*/ `<li value=${index} style="margin: 0 15px;"><strong> ${x.formatted_address} </strong></li>`;
-            })
-            .join("");
-        } else {
-          domGoogleResults.innerHTML = /*html*/ `<li style="margin: 0 15px;"><strong> No Results Found! </strong></li>`;
-        }
+        domGoogleResults.innerHTML = res.results
+          .slice(0, 10)
+          .map((x, index) => {
+            return /*html*/ `<li value=${index} style="margin: 0 15px;"><strong> ${x.formatted_address} </strong></li>`;
+          })
+          .join("");
       }
 
+      for (let i = 0; i < domGoogleResults.getElementsByTagName("li").length; i++) {
+        domGoogleResults.getElementsByTagName("li")[i].addEventListener("mousedown", (e) => {
+          origin.address = res.results[i].formatted_address;
+          origin.lat = res.results[i].geometry.location.lat;
+          origin.lng = res.results[i].geometry.location.lng;
+          console.log(origin);
+          checkZones(origin.lng, origin.lat);
+          hideGoogleResults();
+          // autocompleteSelectedIndex = e.target.value;
+          // setOrigin(i);
+        });
+      }
       showGoogleResults();
     });
-  for (let i = 0; i < domGoogleResults.getElementsByTagName("li").length; i++) {
-    domGoogleResults.getElementsByTagName("li")[i].addEventListener("mousedown", (e) => {
-      origin.a = googleResults[i].formatted_address;
-      origin.x = googleResults[i].geometry.location.lat;
-      origin.y = googleResults[i].geometry.location.lng;
-      initMap((pos = { lat: origin.x, lng: origin.y }));
-      console.log(origin);
-      checkZones(origin.y, origin.x);
-      hideGoogleResults();
-    });
+  console.log(googleResult);
+
+  function validAddress(x) {
+    input = x.trim();
+    if (input[0] >= "0" && input[0] <= "9") {
+      return true;
+    }
   }
 }
 
-function cityFullName(x) {
-  if (x == "P") return "PLANO";
-  if (x == "F") return "FRISCO";
-  if (x == "LE") return "LITTLE ELM";
-  return x;
-}
-
+//Global varible that stores school data that contains users address
 function checkZones(inputLng, inputLat) {
   console.log("checkZones Fired!");
   listOfValidZones = [];
@@ -261,8 +239,7 @@ function checkZones(inputLng, inputLat) {
 }
 
 function startSearch() {
-  origin = { a: "", c: "", y: "", x: "", z: "" };
-
+  origin = {};
   console.log("SEARCHING");
   domGoogleResults.innerHTML = "";
   domResults.innerHTML = "";
@@ -284,7 +261,7 @@ function drawResults(insideDistrictCounter) {
 
   if (origin) {
     rawHtml = `<li>
-    <span style="padding-left: 5px;"> Results for ${origin.a}</span>
+    <span style="padding-left: 5px;"> Results for ${origin.address}</span>
   </li>`;
   }
 
@@ -323,7 +300,7 @@ function drawResults(insideDistrictCounter) {
       <li>
         <div style="display: flex; border-radius: 4px; overflow: hidden; border: red 1px solid">
         <div style="background-color: red; width: 10px"></div>          <div>
-            <span style="padding-left: 5px;">'${origin.a}' is out of district !</span>
+            <span style="padding-left: 5px;">'${origin.address}' is out of district !</span>
           </div>
         </div>
       </li>
@@ -334,17 +311,14 @@ function drawResults(insideDistrictCounter) {
 
   if (insideDistrictCounter > 0) {
     for (const [i, result] of listOfValidZones.entries()) {
-      rawHtml += /*html*/ `
-        <li style="display: flex; border-radius: 4px; overflow: hidden; border: ${colorfy(i)} 1px solid;">
-          <div style="background-color: ${colorfy(
-            i
-          )}; color: white; text-align:center; padding: .5rem;display:flex; flex-direction:column; justify-content:center">
-              <div>Grades</div>
-              <div style="font-size:20px">${result.grades}</div>
-          </div>
-          <div style="padding:.5rem; margin-left: 1rem; margin: auto 0">
-            <div style=" font-size:30px">${result.name}</div>
-            <div>${result.address}</div>
+      rawHtml += `
+        <li>
+          <div style="display: flex; border-radius: 4px; overflow: hidden; border: ${colorfy(i)} 1px solid">
+            <div style="background-color: ${colorfy(i)}; width: 10px"></div>
+            <div>
+              <span style="margin-left: 1rem">${numToAlpha(i)}. </span> ${result.name} | Grades:
+              ${result.grades} | ${result.address}
+            </div>
           </div>
         </li>
       `;
@@ -357,99 +331,11 @@ function drawResults(insideDistrictCounter) {
 
 //These colors make up the possible colors of the results which do not have a color specified (i.e. elementary schools)
 function colorfy(x) {
-  const colorOptions = ["#184366", "#0e987d", "#e95b37", "#5ab3c4"];
+  const colorOptions = ["#184366", "#e8b20f", "#0e987d", "#e95b37", "#5ab3c4"];
   return `${colorOptions[(digit = x % colorOptions.length)]}`.trim();
 }
 
 let districtMap;
-
-// function moveMap(lat, lng) {
-//   districtMap.panTo(new google.maps.LatLng(lat, lng));
-// }
-
-function nestedArrayToObjects(x) {
-  // console.log("nestedArrayToObjects: ", x);
-  newObj = [];
-  for (i of x) {
-    let temp = { lat: i[1], lng: i[0] };
-    newObj.push(temp);
-  }
-  // console.log(`Processed polygon, ${x.length} edges.`);
-  return newObj;
-}
-
-function initMap(pos = { lat: 33.12443425433204, lng: -96.79647875401061 }) {
-  const markerHome = {
-    path: "M32 5a21 21 0 0 0-21 21c0 17 21 33 21 33s21-16 21-33A21 21 0 0 0 32 5zm7 20v10h-5v-5a2 2 0 0 0-2-2 2 2 0 0 0-2 2v5h-5V25h-4l11-9 11 9z",
-    fillColor: "#ed4733",
-    strokeColor: "#c82f25",
-    fillOpacity: 1,
-    strokeWeight: 0.5,
-    rotation: 0,
-    scale: 0.75,
-    anchor: new google.maps.Point(30, 60),
-  };
-
-  // The location of FISD Admin
-  // The map, centered at FISD Admin by default
-  districtMap = new google.maps.Map(document.getElementById("app-map"), {
-    zoom: 14,
-    center: pos,
-    mapTypeId: "roadmap",
-  });
-
-  // The marker, positioned at FISD Admin
-  const marker = new google.maps.Marker({
-    position: pos,
-    map: districtMap,
-    // icon: markerHome,
-    icon: markerHome,
-  });
-
-  //Display Data on map for each valid zone/school
-  for (let i = 0; i < listOfValidZones.length; i++) {
-    const contentString = /*html*/ `
-    <div>
-      <h3>${listOfValidZones[i].name}</h3>
-      <ul>
-        <li>${listOfValidZones[i].grades}</li>
-      </ul>
-    </div>
-    `;
-
-    const infowindow = new google.maps.InfoWindow({
-      content: contentString,
-      ariaLabel: listOfValidZones[i].name,
-    });
-
-    for (const iterator of listOfValidZones[i].border) {
-      new google.maps.Polygon({
-        path: nestedArrayToObjects(iterator[0]),
-        geodesic: true,
-        strokeColor: listOfValidZones[i].color,
-        strokeOpacity: 1,
-        fillColor: listOfValidZones[i].color,
-        fillOpacity: 0.1,
-        strokeWeight: 2,
-      }).setMap(districtMap);
-
-      let mark = new google.maps.Marker({
-        position: listOfValidZones[i].location,
-        map: districtMap,
-        label: `${numToAlpha(i)}`,
-        title: listOfValidZones[i].name,
-        sclae: 0.75,
-      });
-
-      mark.addListener("click", () => {
-        infowindow.open({
-          anchor: mark,
-          map: districtMap,
-        });
-      });
-    }
-  }
-}
 
 // Utility Function to Convert 0-indexed numbers to alphabet. 0=>A , 25=>Z, 26=>AA, 55=>BD
 function numToAlpha(x) {
